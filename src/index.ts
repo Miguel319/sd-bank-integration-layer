@@ -6,11 +6,14 @@ import cookieParser from "cookie-parser";
 import dotenv from "dotenv";
 import mongoose from "mongoose";
 
+// Routes
+import accountRouter from "./routes/account.routes";
+
 const app = express();
 app.use(cors());
 dotenv.config();
 
-const BASE_URL: string = "api/v1";
+const BASE_URL: string = "/api/v1";
 
 // Mongosose configuration
 mongoose
@@ -29,7 +32,7 @@ app.use(bodyParser.json());
 app.use(cookieParser());
 
 // Routes
-// app.use(`${BASE}`)
+app.use(`${BASE_URL}/accounts`, accountRouter);
 
 const PORT = 3001 || process.env.PORT;
 

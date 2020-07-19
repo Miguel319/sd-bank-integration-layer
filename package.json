@@ -22,6 +22,7 @@
   "homepage": "https://github.com/Miguel319/sd-bank-integration-layer#readme",
   "devDependencies": {
     "@types/bcrypt": "^3.0.0",
+    "@types/body-parser": "^1.19.0",
     "@types/color": "^3.0.1",
     "@types/cookie-parser": "^1.4.2",
     "@types/cors": "^2.8.6",
@@ -33,12 +34,12 @@
     "@types/mongoose": "^5.7.32",
     "@types/node": "^14.0.23",
     "@types/shortid": "^0.0.29",
+    "bigint-typescript-definitions": "^5.5.3-0",
     "ts-node": "^8.10.2",
     "ts-node-dev": "^1.0.0-pre.52",
     "typescript": "^3.9.7"
   },
   "dependencies": {
-    "@types/body-parser": "^1.19.0",
     "bcrypt": "^5.0.0",
     "biguint-format": "^1.0.2",
     "body-parser": "^1.19.0",

@@ -253,6 +253,11 @@ bcrypt@^5.0.0:
     node-addon-api "^3.0.0"
     node-pre-gyp "0.15.0"
 
+bigint-typescript-definitions@^5.5.3-0:
+  version "5.5.3-0"
+  resolved "https://registry.yarnpkg.com/bigint-typescript-definitions/-/bigint-typescript-definitions-5.5.3-0.tgz#300089409aec063401c4c7f5e84062358008c70d"
+  integrity sha1-MACJQJrsBjQBxMf16EBiNYAIxw0=
+
 biguint-format@^1.0.2:
   version "1.0.2"
   resolved "https://registry.yarnpkg.com/biguint-format/-/biguint-format-1.0.2.tgz#21e8d6c8259a8c9b39874ba6a060a1a8ec137f30"

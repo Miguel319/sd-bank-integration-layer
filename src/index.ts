@@ -8,6 +8,7 @@ import mongoose from "mongoose";
 
 // Routes
 import accountRouter from "./routes/account.routes";
+import beneficiaryRouter from "./routes/beneficiary.routes"
 
 const app = express();
 app.use(cors());
@@ -33,6 +34,8 @@ app.use(cookieParser());
 
 // Routes
 app.use(`${BASE_URL}/accounts`, accountRouter);
+app.use(`${BASE_URL}/beneficiaries`, beneficiaryRouter);
+
 
 const PORT = 3001 || process.env.PORT;
 

@@ -44,9 +44,8 @@ const AccountSchema = new Schema(
 // AccountSchema.pre("save", function (next: any) {
 //   const generator: FlakeId = new FlakeId();
 
-
 //   const uniqueAccNo: Buffer = generator.next();
-//   // const uniqueAccNoFormat: string = String(intFormat(uniqueAccNo)).slice(0, 12);
+//   const uniqueAccNoFormat: string = String(intFormat(uniqueAccNo)).slice(0, 12);
 
 //   (this as any).account_number = uniqueAccNoFormat;
 //   next();

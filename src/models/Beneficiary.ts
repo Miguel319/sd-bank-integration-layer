@@ -21,8 +21,14 @@ const BeneficiarySchema = new Schema({
     },
     beneficiary_account: {
         type: String,
+        unique: true,
         required: [true, "Beneficiary account must be provided"]
     },
+    email: {
+        type: String,
+        unique: true,
+        match: [/^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/, "Please add a valid email."],
+    }
     // user_account: {
     //     type: Types.ObjectId,
     //     ref: "Account", 

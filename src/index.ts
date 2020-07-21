@@ -9,6 +9,7 @@ import mongoose from "mongoose";
 // Routes
 import accountRouter from "./routes/account.routes";
 import beneficiaryRouter from "./routes/beneficiary.routes"
+import { errorHandler } from "./middlewares/error";
 
 const app = express();
 app.use(cors());
@@ -37,9 +38,8 @@ app.use(`${BASE_URL}/accounts`, accountRouter);
 app.use(`${BASE_URL}/beneficiaries`, beneficiaryRouter);
 
 
-//Middles erros
-//app.use(err)
-
+//Error handler
+app.use(errorHandler);
 
 const PORT = 3001 || process.env.PORT;
 

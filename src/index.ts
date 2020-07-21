@@ -37,6 +37,10 @@ app.use(`${BASE_URL}/accounts`, accountRouter);
 app.use(`${BASE_URL}/beneficiaries`, beneficiaryRouter);
 
 
+//Middles erros
+//app.use(err)
+
+
 const PORT = 3001 || process.env.PORT;
 
 app.listen(PORT, () => console.log("Server listening..."));

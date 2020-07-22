@@ -2,6 +2,8 @@ import { Request, Response, NextFunction } from "express";
 import Beneficiary from "../models/Beneficiary";
 import { asyncHandler } from "../middlewares/async";
 import ErrorResponse from "../utils/error-response";
+import Account from "../models/Account";
+import User from "../models/User";
 
 type BeneficiaryType = {
     name?: string;
@@ -14,24 +16,41 @@ type BeneficiaryType = {
 
 export const createBeneficiary = asyncHandler(async (req: Request, res: Response,next: NextFunction) => {
 
-    const {name, type, id, name_bank, beneficiary_account, email} = req.body; 
+    const {name, type, id, name_bank, beneficiary_account, email} = req.body;
+    
+     // 1. search for beneficiary if beneficiary_account is from sd-bank -> return name, type, id
+    const account = await Account.find({beneficiary_account});
 
-    //object to create
-    const newBeneficiary:  BeneficiaryType = {
-            name,
-            type, 
-            id, 
-            name_bank, 
-            beneficiary_account,
-            email
+    const beneficiary: BeneficiaryType ={
+        name,
+        type,
+        id,
+        name_bank,
+        beneficiary_account,
+        email,
     }
+    
+    if(account){
+        const _id = (account as any)._id;
+        const user = await User.find({_id});
 
-     //validations logic
-    await Beneficiary.create(newBeneficiary)
+        beneficiary.name = `${(user as any).name} ${(user as any).lastName}`;
+        beneficiary.email = (user as any).email;
+        beneficiary.name_bank = "SD Bank";
+        //beneficiary.id = (user as any).id
+        beneficiary.beneficiary_account = (account as any).account_number;
 
+        await Beneficiary.create(beneficiary)
+        res.status(201).json({success: true, message: "Beneficiary created succesfully!."});
+    }
+    
+    //sender
+    await Beneficiary.create(beneficiary)
     res.status(201).json({success: true, message: "Beneficiary created succesfully!."});
     
 })
+
+
 
 export const getBeneficiaries = asyncHandler (async(req: Request, res: Response, next: NextFunction) => {
 
@@ -60,3 +79,6 @@ export const updateBeneficiary = asyncHandler (async(req: Request, res: Response
     res.status(200).json({success: true, message: "Successfully updated beneficiary."});
     
 })
+
+    //creacion de método eliminar
+    //getByIdBeneficiary.

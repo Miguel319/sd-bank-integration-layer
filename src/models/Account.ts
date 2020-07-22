@@ -34,6 +34,10 @@ const AccountSchema = new Schema(
       type: Number,
       default: 0,
     },
+    user: {
+      type: Types.ObjectId,
+      ref: "User"
+    }
   },
   {
     timestamps: true, // created_at, updated_at

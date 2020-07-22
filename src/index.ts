@@ -5,11 +5,12 @@ import bodyParser from "body-parser";
 import cookieParser from "cookie-parser";
 import dotenv from "dotenv";
 import mongoose from "mongoose";
+import { errorHandler } from "./middlewares/error";
 
-// Routes
+// Route imports
 import accountRouter from "./routes/account.routes";
 import beneficiaryRouter from "./routes/beneficiary.routes"
-import { errorHandler } from "./middlewares/error";
+import authRouter from "./routes/auth.routes";
 
 const app = express();
 app.use(cors());
@@ -36,6 +37,7 @@ app.use(cookieParser());
 // Routes
 app.use(`${BASE_URL}/accounts`, accountRouter);
 app.use(`${BASE_URL}/beneficiaries`, beneficiaryRouter);
+app.use(`${BASE_URL}/auth`, authRouter);
 
 
 //Error handler

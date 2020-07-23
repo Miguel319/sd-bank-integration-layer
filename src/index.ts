@@ -7,8 +7,8 @@ import dotenv from "dotenv";
 import mongoose from "mongoose";
 
 // Routes
-import accountRouter from "./routes/account.routes";
-import beneficiaryRouter from "./routes/beneficiary.routes"
+// import accountRouter from "./routes/account.routes";
+import beneficiaryRouter from "./routes/beneficiary.routes";
 import authRouter from "./routes/auth.routes";
 
 const app = express();
@@ -34,11 +34,10 @@ app.use(bodyParser.json());
 app.use(cookieParser());
 
 // Routes
-app.use(`${BASE_URL}/accounts`, accountRouter);
+// app.use(`${BASE_URL}/accounts`, accountRouter);
 app.use(`${BASE_URL}/beneficiaries`, beneficiaryRouter);
 app.use(`${BASE_URL}/auth`, authRouter);
 
-
 const PORT = 3001 || process.env.PORT;
 
-app.listen(PORT, () => console.log("Server listening..."));
+app.listen(PORT, () => console.log(`Server listening on Port ${PORT}`));

@@ -1,4 +1,4 @@
-import mongoose, { Schema, Types } from "mongoose";
+import mongoose, { Schema } from "mongoose";
 import jwt from "jsonwebtoken";
 import crypto from "crypto";
 import bcrypt from "bcrypt";
@@ -43,7 +43,7 @@ const UserSchema = new Schema(
     resetPasswordExpire: Date,
     accounts: [
       {
-        type: Types.ObjectId,
+        type: Schema.Types.ObjectId,
         ref: "Account",
       },
     ],

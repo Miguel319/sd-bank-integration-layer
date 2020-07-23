@@ -23,11 +23,11 @@ const BeneficiarySchema = new Schema({
         type: String,
         required: [true, "Beneficiary account must be provided"]
     },
-    // user_account: {
-    //     type: Types.ObjectId,
-    //     ref: "Account", 
-    //     required: [true, "Account reference must be provided."]
-    // },
+    user_account: {
+        type: Schema.Types.ObjectId,
+        ref: "Account", 
+        required: [true, "Account reference must be provided."]
+    },
     
 });
 

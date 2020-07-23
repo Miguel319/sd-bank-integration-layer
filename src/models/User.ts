@@ -3,14 +3,13 @@ import jwt from "jsonwebtoken";
 import crypto from "crypto";
 import bcrypt from "bcrypt";
 
-
 const UserSchema = new Schema(
   {
     id: {
       type: String,
       required: [true, "The id field is mandatory"],
       minlength: [11, "The id must have eleven characters."],
-      maxlength: [11, "The id must have eleven characters."]
+      maxlength: [11, "The id must have eleven characters."],
     },
     name: {
       type: String,
@@ -23,10 +22,7 @@ const UserSchema = new Schema(
     email: {
       type: String,
       unique: true,
-      match: [
-        /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/,
-        "Please add a valid email.",
-      ],
+      match: [/^[^\s@]+@[^\s@]+\.[^\s@]+$/, "Please add a valid email."],
       required: [true, "The email address is required."],
     },
     password: {
@@ -35,7 +31,7 @@ const UserSchema = new Schema(
       minlength: [6, "The password should be at least 6 characters long."],
       select: false,
       match: [
-        /^(?=.*[a-z])(?=.*[A-Z])(?=.*d)(?=.*[@$!%*?&])[A-Za-zd@$!%*?&]$/,
+        /^(?=.*[\d])(?=.*[A-Z])(?=.*[a-z])(?=.*[!@#$.%^&*])[\w!@#$.%^&*]{6,}$/,
         "The password must have upper and lowercase letter(s), number(s) & special character(s).",
       ],
     },
@@ -88,6 +84,5 @@ UserSchema.methods.getResetPasswordToken = async function () {
 
   return resetToken;
 };
-
 
 export default mongoose.model("User", UserSchema);

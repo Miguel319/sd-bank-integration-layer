@@ -13,7 +13,7 @@ export const signup = asyncHandler(
     res: Response,
     next: NextFunction
   ): Promise<void | Response> => {
-    const { email, password, role } = req.body;
+    const { id, name, lastName, email, password, role } = req.body;
 
     // Check if there's already a user with that email
     const userFound = await User.findOne({ email });
@@ -26,6 +26,9 @@ export const signup = asyncHandler(
     /* TODO: fetch employee data from Revel.  */
     // When Revel data is available, verify if the email is on the Revel API
     const newUser: any = await User.create({
+      id,
+      name,
+      lastName,
       email,
       password,
       role,

@@ -10,6 +10,7 @@ import mongoose from "mongoose";
 // import accountRouter from "./routes/account.routes";
 import beneficiaryRouter from "./routes/beneficiary.routes";
 import authRouter from "./routes/auth.routes";
+import { errorHandler } from "./middlewares/error";
 
 const app = express();
 app.use(cors());
@@ -37,6 +38,8 @@ app.use(cookieParser());
 // app.use(`${BASE_URL}/accounts`, accountRouter);
 app.use(`${BASE_URL}/beneficiaries`, beneficiaryRouter);
 app.use(`${BASE_URL}/auth`, authRouter);
+
+app.use(errorHandler);
 
 const PORT = 3001 || process.env.PORT;
 

@@ -7,13 +7,9 @@ import dotenv from "dotenv";
 import mongoose from "mongoose";
 import { errorHandler } from "./middlewares/error";
 
-// Routes
-// import accountRouter from "./routes/account.routes";
-import beneficiaryRouter from "./routes/beneficiary.routes";
-
 // Route imports
 import accountRouter from "./routes/account.routes";
-import beneficiaryRouter from "./routes/beneficiary.routes"
+import beneficiaryRouter from "./routes/beneficiary.routes";
 import authRouter from "./routes/auth.routes";
 
 const app = express();
@@ -39,7 +35,7 @@ app.use(bodyParser.json());
 app.use(cookieParser());
 
 // Routes
-// app.use(`${BASE_URL}/accounts`, accountRouter);
+app.use(`${BASE_URL}/accounts`, accountRouter);
 app.use(`${BASE_URL}/beneficiaries`, beneficiaryRouter);
 app.use(`${BASE_URL}/auth`, authRouter);
 

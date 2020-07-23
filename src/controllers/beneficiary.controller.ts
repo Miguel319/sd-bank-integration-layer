@@ -43,8 +43,6 @@ export const createBeneficiary = asyncHandler(async (req: Request, res: Response
     
 })
 
-
-
 export const getBeneficiaries = asyncHandler (async(req: Request, res: Response, next: NextFunction) => {
 
     const beneficiaries = await Beneficiary.find({});

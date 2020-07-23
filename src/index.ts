@@ -12,9 +12,9 @@ import { errorHandler } from "./middlewares/error";
 import beneficiaryRouter from "./routes/beneficiary.routes";
 
 // Route imports
-import accountRouter from "./routes/account.routes";
-import beneficiaryRouter from "./routes/beneficiary.routes"
+//import accountRouter from "./routes/account.routes";
 import authRouter from "./routes/auth.routes";
+import loanRouter from "./routes/loan.routes";
 
 const app = express();
 app.use(cors());
@@ -42,6 +42,7 @@ app.use(cookieParser());
 // app.use(`${BASE_URL}/accounts`, accountRouter);
 app.use(`${BASE_URL}/beneficiaries`, beneficiaryRouter);
 app.use(`${BASE_URL}/auth`, authRouter);
+app.use(`${BASE_URL}/loans`, loanRouter);
 
 app.use(errorHandler);
 

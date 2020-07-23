@@ -1,5 +1,5 @@
 import mongoose, { Schema, Types } from "mongoose";
-import intFormat from "biguint-format";
+// import intFormat from "biguint-format";
 
 import FlakeId from "flake-idgen";
 
@@ -35,7 +35,7 @@ const AccountSchema = new Schema(
       default: 0,
     },
     user: {
-      type: Types.ObjectId,
+      type: Schema.Types.ObjectId,
       ref: "User"
     }
   },
@@ -45,14 +45,14 @@ const AccountSchema = new Schema(
 );
 
 // Create a random but unique 12-digit account number
-AccountSchema.pre("save", function (next: any) {
-  const generator: FlakeId = new FlakeId();
+// AccountSchema.pre("save", function (next: any) {
+//   const generator: FlakeId = new FlakeId();
 
-  const uniqueAccNo: Buffer = generator.next();
-  const uniqueAccNoFormat: string = String(intFormat(uniqueAccNo)).slice(0, 12);
+//   const uniqueAccNo: Buffer = generator.next();
+//   const uniqueAccNoFormat: string = String(intFormat(uniqueAccNo)).slice(0, 12);
 
-  (this as any).account_number = uniqueAccNoFormat;
-  next();
-});
+//   (this as any).account_number = uniqueAccNoFormat;
+//   next();
+// });
 
 export default mongoose.model("Account", AccountSchema);

@@ -1,8 +1,8 @@
-// import { Router } from "express";
-// // import { createAccount } from "../controllers/account.controller";
+import { Router } from "express";
+import { createAccount } from '../controllers/account.controller';
 
-// const accountRouter: Router = Router();
+const accountRouter: Router = Router();
 
-// // accountRouter.post("", createAccount);
+accountRouter.post("", createAccount);
 
-// export default accountRouter;
+export default accountRouter;

@@ -1,14 +1,18 @@
 import mongoose, { Schema, Types } from "mongoose";
 // import intFormat from "biguint-format";
-
 import FlakeId from "flake-idgen";
+
+const { ObjectId } = Schema.Types;
 
 const AccountSchema = new Schema(
   {
     account_type: {
       type: String,
       enum: ["Checkings", "Savings"],
-      required: [true, "You must specify the account type (Checkings or Savings)."]
+      required: [
+        true,
+        "You must specify the account type (Checkings or Savings).",
+      ],
     },
     available_balance: {
       type: Number,
@@ -20,13 +24,19 @@ const AccountSchema = new Schema(
     },
     account_number: {
       type: String,
+      unique: [true, "That account number is already taken."],
       minlength: [10, "The account number must have at least 10 characters."],
       maxlength: [12, "The account number can't exceed 12 characters."],
     },
     monthly_avg_balance: Number,
+    user: {
+      required: [true, "A user must be associated with this account."],
+      type: Schema.Types.ObjectId,
+      ref: "User",
+    },
     transactions: [
       {
-        type: Schema.Types.ObjectId,
+        type: ObjectId,
         ref: "Transaction",
       },
     ],
@@ -34,9 +44,9 @@ const AccountSchema = new Schema(
       type: Number,
       default: 0,
     },
-    user: {
-      type: Schema.Types.ObjectId,
-      ref: "User"
+    loans: {
+      type: ObjectId,
+      ref: "Account"
     }
   },
   {
@@ -45,14 +55,14 @@ const AccountSchema = new Schema(
 );
 
 // Create a random but unique 12-digit account number
-// AccountSchema.pre("save", function (next: any) {
-//   const generator: FlakeId = new FlakeId();
+/*AccountSchema.pre("save", function (next: any) {
+  const generator: FlakeId = new FlakeId();
 
 //   const uniqueAccNo: Buffer = generator.next();
 //   const uniqueAccNoFormat: string = String(intFormat(uniqueAccNo)).slice(0, 12);
 
-//   (this as any).account_number = uniqueAccNoFormat;
-//   next();
-// });
-
+  (this as any).account_number = uniqueAccNoFormat;
+  next();
+});
+*/
 export default mongoose.model("Account", AccountSchema);

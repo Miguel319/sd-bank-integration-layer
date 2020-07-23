@@ -7,12 +7,9 @@ import dotenv from "dotenv";
 import mongoose from "mongoose";
 import { errorHandler } from "./middlewares/error";
 
-// Routes
-// import accountRouter from "./routes/account.routes";
-import beneficiaryRouter from "./routes/beneficiary.routes";
-
 // Route imports
-//import accountRouter from "./routes/account.routes";
+import accountRouter from "./routes/account.routes";
+import beneficiaryRouter from "./routes/beneficiary.routes";
 import authRouter from "./routes/auth.routes";
 import loanRouter from "./routes/loan.routes";
 
@@ -39,7 +36,7 @@ app.use(bodyParser.json());
 app.use(cookieParser());
 
 // Routes
-// app.use(`${BASE_URL}/accounts`, accountRouter);
+app.use(`${BASE_URL}/accounts`, accountRouter);
 app.use(`${BASE_URL}/beneficiaries`, beneficiaryRouter);
 app.use(`${BASE_URL}/auth`, authRouter);
 app.use(`${BASE_URL}/loans`, loanRouter);

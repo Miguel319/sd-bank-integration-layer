@@ -31,7 +31,7 @@ const AccountSchema = new Schema(
     monthly_avg_balance: Number,
     user: {
       required: [true, "A user must be associated with this account."],
-      type: ObjectId,
+      type: Schema.Types.ObjectId,
       ref: "User",
     },
     transactions: [
@@ -58,8 +58,8 @@ const AccountSchema = new Schema(
 /*AccountSchema.pre("save", function (next: any) {
   const generator: FlakeId = new FlakeId();
 
-  const uniqueAccNo: Buffer = generator.next();
-  const uniqueAccNoFormat: string = String(intFormat(uniqueAccNo)).slice(0, 12);
+//   const uniqueAccNo: Buffer = generator.next();
+//   const uniqueAccNoFormat: string = String(intFormat(uniqueAccNo)).slice(0, 12);
 
   (this as any).account_number = uniqueAccNoFormat;
   next();

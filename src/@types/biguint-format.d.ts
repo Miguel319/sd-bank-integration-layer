@@ -1,1 +1,1 @@
-declare module "biguint-format";
+//declare module "biguint-format";

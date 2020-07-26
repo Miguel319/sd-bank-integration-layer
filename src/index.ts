@@ -39,11 +39,9 @@ app.use(`${BASE_URL}/accounts`, accountRouter);
 app.use(`${BASE_URL}/beneficiaries`, beneficiaryRouter);
 app.use(`${BASE_URL}/auth`, authRouter);
 
-app.use(errorHandler);
-
 // Error handler
 app.use(errorHandler);
 
 const PORT = 3001 || process.env.PORT;
 
-app.listen(PORT, () => console.log(`Server listening on Port ${PORT}`));
+app.listen(PORT, () => console.log(`Server listening on PORT ${PORT}`));

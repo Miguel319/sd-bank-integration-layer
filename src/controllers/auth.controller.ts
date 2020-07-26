@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import { asyncHandler } from "../middlewares/async";
 import User from "../models/User";
 import ErrorResponse from "../utils/error-response";
-import { validateFields, sendTokenResponse } from "../utils/auth-helpers";
+import { validateUserCredentials, sendTokenResponse } from "../utils/auth-helpers";
 
 // @desc   Register user
 // @route  POST /api/v1/auth/signup
@@ -49,18 +49,18 @@ export const signin = asyncHandler(
   ): Promise<Response | void> => {
     const { email, password } = req.body;
 
-    validateFields(req, next);
+    validateUserCredentials(req, next);
 
     // Check for user by its email
     const user = await User.findOne({ email }).select("+password");
 
-    if (!user) return validateFields(req, next, true);
+    if (!user) return validateUserCredentials(req, next, true);
 
     const isPasswordRight: boolean = await (user as any).matchPassword(
       password
     );
 
-    if (!isPasswordRight) return validateFields(req, next, true);
+    if (!isPasswordRight) return validateUserCredentials(req, next, true);
 
     sendTokenResponse(user, 200, res, "sign in");
   }

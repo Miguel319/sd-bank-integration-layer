@@ -22,6 +22,10 @@ const TransactionSchema = new Schema(
       type: Boolean,
       default: true,
     },
+    approved: {
+      type: Boolean,
+      default: true,
+    },
     amount_in_transit: {
       type: Number,
       default: 0,

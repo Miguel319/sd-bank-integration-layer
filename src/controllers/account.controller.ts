@@ -4,8 +4,19 @@ import { asyncHandler } from "../middlewares/async";
 import User from "../models/User";
 import ErrorResponse from "../utils/error-response";
 import Transaction from "../models/Transaction";
+import { notFound } from "../utils/err-helpers";
+import {
+  getTransactionObjs,
+  validateAccProvidedFields,
+  getAccFromNTo,
+} from "../utils/account-helpers";
+import {
+  validateAccounts,
+  validateTransfer,
+  transferFunds,
+} from "../utils/account-helpers";
 
-// @desc   Register user
+// @desc   Create account
 // @route  POST /api/v1/accounts
 // @access Private
 export const createAccount = asyncHandler(
@@ -18,8 +29,7 @@ export const createAccount = asyncHandler(
 
     const userFound: any = await User.findById(user);
 
-    if (!userFound)
-      return next(new ErrorResponse("Unable to find user with that id.", 404));
+    if (!userFound) return notFound({ entity: "User", next });
 
     const accountToCreate = {
       account_type,
@@ -69,8 +79,7 @@ export const getUserAccounts = asyncHandler(
 
     const userFound: any = await User.findById(_id);
 
-    if (!userFound)
-      next(new ErrorResponse("Unable to find user with that id", 404));
+    if (!userFound) return notFound({ message: "Message", next });
 
     const accounts = await Account.find({ _id: userFound._id });
 
@@ -91,24 +100,21 @@ export const depositFunds = asyncHandler(
     const { amount } = req.body;
 
     if (amount < 2)
-      next(new ErrorResponse("You must deposit at least RD$2.00", 400));
+      return next(new ErrorResponse("You must deposit at least RD$2.00.", 400));
 
     const accountFound: any = await Account.findById(_id);
 
-    if (!accountFound)
-      next(new ErrorResponse("Unable to find account with that id", 404));
+    // checkIfFound({ next, entity: "Account" }, accountFound);
 
     // Add the provided balance to the existing one
-    accountFound.available_balance =
-      accountFound.available_balance + Number(amount);
-    accountFound.current_balance =
-      accountFound.current_balance + Number(amount);
+    accountFound.available_balance += Number(amount);
+    accountFound.current_balance += Number(amount);
 
     await accountFound.save();
 
     res.status(200).json({
       success: true,
-      message: `RD$${amount} were successfully deposited into your account!`,
+      message: `RD$${amount}.00 were successfully deposited into your account!`,
     });
   }
 );
@@ -124,11 +130,11 @@ export const getAccountDetailsById = asyncHandler(
   ): Promise<void | Response> => {
     const { _id } = req.params;
 
-    const account = await Account.find({ _id });
+    const account = await Account.findById(_id);
 
-    if (!account) next(new ErrorResponse("Account not found.", 404));
-    
-    res.status(200).json(account[0]);
+    if (!account) return notFound({ next, entity: "Account" });
+
+    res.status(200).json(account);
   }
 );
 
@@ -146,5 +152,73 @@ export const transactionHistory = asyncHandler(
     const transactions = await Transaction.find({ account });
 
     res.status(200).json(transactions);
+  }
+);
+
+// @desc   Transfer funds to one of the user's accounts
+// @route  PUT /api/v1/accounts/:_id/personal-transfer
+// @access Private
+export const transferToMyself = asyncHandler(
+  async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void | Response> => {
+    const { _id } = req.params;
+    const { userId, to, amount, description } = req.body;
+
+    const areFieldsInvalid: string | undefined = validateAccProvidedFields(req);
+
+    if (areFieldsInvalid)
+      return next(new ErrorResponse(areFieldsInvalid!, 400));
+
+    const sender: any = await User.findOne({ _id: userId });
+
+    if (!sender) return notFound({ entity: "User", next });
+
+    const { accountFrom, accountTo } = getAccFromNTo(_id, to, sender);
+
+    const areAccountsInvalid: string = validateAccounts(accountFrom, accountTo);
+
+    if (areAccountsInvalid)
+      return next(new ErrorResponse(areAccountsInvalid!, 400));
+
+    const accountFromFound = await Account.findOne({ _id });
+    const accountToFound = await Account.findOne({ _id: to });
+
+    const amountToTransfer: number = Number(amount);
+
+    // Make sure the user has enough funds to perform the transfer
+    const isTransferInvalid: string | undefined = validateTransfer(
+      next,
+      accountFromFound,
+      amountToTransfer
+    );
+
+    if (isTransferInvalid)
+      return next(new ErrorResponse(isTransferInvalid!, 400));
+
+    transferFunds(accountFromFound, accountToFound, amountToTransfer);
+
+    // getTransactionObjs() returns the objects from which the transactions will be created
+    const [transactionFrom, transactionTo]: Array<Object> = getTransactionObjs(
+      _id,
+      to,
+      amountToTransfer,
+      description
+    );
+
+    await Transaction.create(transactionFrom);
+    await Transaction.create(transactionTo);
+
+    await accountFromFound?.save();
+    await accountToFound?.save();
+
+    res.status(200).json({
+      success: true,
+      message: `RD$${amountToTransfer} were successfully transferred!`,
+      approvalNumber: undefined, // TODO: Generate approval number,
+      fee: "RD$10.00",
+    });
   }
 );

@@ -1,7 +1,7 @@
 import ErrorResponse from "./error-response";
 import { NextFunction, Request, Response } from "express";
 
-export const validateFields = (
+export const validateUserCredentials = (
   req: Request,
   next: NextFunction,
   unuthorized: boolean = false

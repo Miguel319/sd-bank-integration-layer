@@ -27,9 +27,5 @@ const LoanSchema = new Schema(
     }
 );
 
-LoanSchema.pre("save",function(next: any){
-    const valueOfThis: any = this;
-    valueOfThis.remaining = valueOfThis.total;
-}); 
 
 export default mongoose.model("Loan", LoanSchema);

@@ -41,8 +41,6 @@ app.use(`${BASE_URL}/beneficiaries`, beneficiaryRouter);
 app.use(`${BASE_URL}/auth`, authRouter);
 app.use(`${BASE_URL}/loans`, loanRouter);
 
-app.use(errorHandler);
-
 // Error handler
 app.use(errorHandler);
 

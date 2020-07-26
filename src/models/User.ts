@@ -43,6 +43,12 @@ const UserSchema = new Schema(
         ref: "Account",
       },
     ],
+    loans: [
+      {
+         type: Schema.Types.ObjectId,
+         ref: "Loan",
+      }
+    ]
   },
   {
     timestamps: true, // created_at, updated_at

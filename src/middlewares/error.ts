@@ -11,6 +11,8 @@ export const errorHandler = async (
 
   error.message = err.message;
 
+  console.log(error);
+  
   // Mongoose bad ObjectId
   if (err.name === "CastError" || err.message.includes("404")) {
     const message: string = `Unable to find resource with the ID ${

@@ -1,9 +1,11 @@
-import mongoose, { Schema, Types } from "mongoose";
+import mongoose, { Schema } from "mongoose";
+
+const { ObjectId } = Schema.Types;
 
 const TransactionSchema = new Schema(
   {
     account: {
-      type: Types.ObjectId,
+      type: ObjectId,
       ref: "Account",
     },
     description: String,
@@ -20,10 +22,14 @@ const TransactionSchema = new Schema(
       type: Boolean,
       default: true,
     },
+    approved: {
+      type: Boolean,
+      default: true,
+    },
     amount_in_transit: {
       type: Number,
-      default: 0
-    }
+      default: 0,
+    },
   },
   {
     timestamps: true, // created_at, updated_at

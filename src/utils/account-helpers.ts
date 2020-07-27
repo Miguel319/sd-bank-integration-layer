@@ -1,90 +1,124 @@
-import { NextFunction, Request } from "express";
+import { Request, NextFunction } from "express";
+import ErrorResponse from "./error-response";
 
-export const validateAccounts = (accountFrom: any, accountTo: any): string => {
-  if (accountFrom === accountTo) return "The accounts must be different.";
+export const validateAccounts = (
+  userId: any,
+  senderAcc: any,
+  receiverAcc: any
+) => {
+  let isReceiverValid: boolean = String(receiverAcc.user) === String(userId);
 
-  const message: string =
-    !accountFrom && !accountTo
-      ? `None of those account numbers belong to this user.`
-      : !accountFrom
-      ? `The ${accountFrom} account number doesn't belong to this user.`
-      : !accountTo
-      ? `The ${accountTo} account number doesn't belong to this user.`
-      : "";
+  if (!isReceiverValid)
+    return "When it comes to personal transfers, both accounts must belong to the same user.";
 
-  return message;
+  let areAccountsEqual: boolean =
+    senderAcc.account_number === receiverAcc.account_number;
+
+  if (areAccountsEqual) return "The accounts must be different.";
 };
 
-type FromTo = {
-  accountFrom: any;
-  accountTo: any;
-};
-
-export const getAccFromNTo = (_id: any, to: any, sender: any): FromTo => {
-  let accountFrom: any = _id;
-  let accountTo: any = to;
-
-  for (let elem of sender.accounts) {
-    if (String(elem) == String(_id)) accountFrom = elem;
-    if (String(elem) == String(to)) accountTo = elem;
-  }
-
-  return { accountFrom, accountTo };
-};
-
-export const validateTransfer = (
-  next: NextFunction,
-  account: any,
-  amount: number
+export const checkBalance = (
+  amount: number,
+  senderAcc: any
 ): string | undefined => {
-  const currentBalance = account.current_balance;
+  const currentBalance = senderAcc.current_balance;
 
-  // The -10 is because there's a RD$10.00 fee
   const fee: number = 10;
 
   const notEnoughFunds: boolean =
-    account.available_balance - fee < amount && currentBalance - fee < amount;
+    senderAcc.available_balance - fee < amount && currentBalance - fee < amount;
 
   if (notEnoughFunds)
     return `You don't have enough funds to process this transfer. Current balance = RD$${currentBalance}. Transfer Amount = RD$${amount} + RD$${fee}.00 fee`;
 };
 
+export const validateSameBankTransfer = (
+  sender: any,
+  receiverAcc: any
+): undefined | string => {
+  const accBelongsToTheSameUser = sender.accounts.find(
+    (v: any) => String(v) === String(receiverAcc._id)
+  );
+
+  if (!accBelongsToTheSameUser) return;
+
+  return "The receiver account must belong to someone else within SD-Bank.";
+};
+
+export const invalidInterbankTransfer = (next: any): any => {
+  return next(
+    new ErrorResponse(
+      "The receiver account must be from a different bank.",
+      400
+    )
+  );
+};
+
 export const transferFunds = (
-  accountFromFound: any,
-  accountToFound: any,
-  amountToTransfer: any
+  senderAcc: any,
+  receiverAcc: any,
+  amountToTransfer: number
 ): void => {
   // The transaction has a RD$10.00 fee
   const tenPesosFee: number = 10;
 
   // Funds deducted from
-  accountFromFound.current_balance -= amountToTransfer + tenPesosFee;
-  accountFromFound.available_balance -= amountToTransfer + tenPesosFee;
+  senderAcc.current_balance -= amountToTransfer + tenPesosFee;
+  senderAcc.available_balance -= amountToTransfer + tenPesosFee;
 
   // Funds transferred to
-  accountToFound.current_balance += amountToTransfer;
-  accountToFound.available_balance += amountToTransfer;
+  receiverAcc.current_balance += amountToTransfer;
+  receiverAcc.available_balance += amountToTransfer;
 };
 
-export const getTransactionObjs = (
-  from: any,
-  to: any,
-  amount: number,
-  description: string
-): Array<Object> => {
+export const processInterbankTransfer = (
+  senderAcc: any,
+  amountToTransfer: number
+) => {
+  // The transaction has a RD$10.00 fee
+  const tenPesosFee: number = 10;
+
+  // Funds deducted from
+  senderAcc.current_balance -= amountToTransfer + tenPesosFee;
+  senderAcc.available_balance -= amountToTransfer + tenPesosFee;
+};
+
+export const getInterbankTransactionObj = (req: Request, senderAcc: any) => {
+  const { _id /* account_id */ } = req.params;
+  const { receiver_account_number, amount, description, } = req.body;
+
   const transactionFrom = {
-    account: from,
+    account: _id,
     description:
-      description || `RD${amount} transferred to your other account: ${to}`,
+      description ||
+      `RD${amount} Interbank bank transfer ${receiver_account_number}`,
+    amount,
+    type: "Transfer",
+  };
+}
+
+export const getTransactionObjs = (
+  req: Request,
+  senderAcc: any,
+  receiverAcc: any
+): Array<Object> => {
+  const { _id /* account_id */ } = req.params;
+  const { receiver_account_number, amount, description } = req.body;
+
+  const transactionFrom = {
+    account: _id,
+    description:
+      description ||
+      `RD${amount} transferred to your other account ${receiver_account_number}`,
     amount,
     type: "Transfer",
   };
 
   const transactionTo = {
-    account: to,
+    account: receiverAcc._id,
     description:
       description ||
-      `RD$${amount} transferred from your other account: ${from}`,
+      `RD$${amount} transferred from your other account: ${senderAcc.account_number}`,
     amount,
     type: "Transfer",
   };
@@ -93,19 +127,16 @@ export const getTransactionObjs = (
 };
 
 export const validateAccProvidedFields = (req: Request): string | undefined => {
-  const { userId, to, amount } = req.body;
+  const { user_id, receiver_account_no, amount } = req.body;
 
   if (Number(amount) < 2) return "You must transfer at least RD$2.00.";
 
-  const body: any = { userId, to, amount };
+  const body: any = { user_id, receiver_account_no, amount };
 
   const errList = [];
 
   for (let elem in body) {
-    if (!body[elem])
-      errList.push(
-        `${elem.slice(0, 1).toUpperCase()}${elem.slice(1)} is mandatory. `
-      );
+    if (!body[elem]) errList.push(`'${elem}' is mandatory. `);
   }
 
   if (errList.length === 0) return;

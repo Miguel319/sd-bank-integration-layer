@@ -30,6 +30,10 @@ const TransactionSchema = new Schema(
       type: Number,
       default: 0,
     },
+    receiver: {
+      type: ObjectId,
+      ref: "User",
+    },
   },
   {
     timestamps: true, // created_at, updated_at

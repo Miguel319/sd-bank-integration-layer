@@ -26,4 +26,6 @@ const LoanSchema = new Schema(
         timestamps: true, // created_at, updated_at
     }
 );
+
+
 export default mongoose.model("Loan", LoanSchema);

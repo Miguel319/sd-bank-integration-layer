@@ -1,4 +1,6 @@
 import mongoose, { Schema } from "mongoose";
+import crypto from "crypto";
+import bcrypt from "bcrypt";
 
 const CashierSchema = new Schema(
     {
@@ -33,5 +35,11 @@ const CashierSchema = new Schema(
       timestamps: true, // created_at, updated_at
     }
   );
+
+  //Match user entered password to hashed password in db
+  CashierSchema.methods.matchPassword = async function (enteredPassword: string) {
+    return await bcrypt.compare(enteredPassword, this.password);
+  };
+
 
   export default mongoose.model("Cashier", CashierSchema);

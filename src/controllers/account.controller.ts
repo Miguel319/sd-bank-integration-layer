@@ -9,6 +9,7 @@ import {
   validateAccounts,
   validateSameBankTransfer,
   processInterbankTransfer,
+  getTransferTransactionObj,
 } from "../utils/account-helpers";
 import {
   getTransactionObjs,
@@ -234,11 +235,13 @@ export const transferToMyself = asyncHandler(
     transferFunds(senderAcc, receiverAcc, amountToTransfer);
 
     // getTransactionObjs() returns the objects from which the transactions will be created
-    const [transactionFrom, transactionTo]: Array<Object> = getTransactionObjs(
+    const [transactionFrom, transactionTo]: Array<Object> = getTransactionObjs({
       req,
       senderAcc,
-      receiverAcc
-    );
+      receiverAcc,
+      sender,
+      receiver: sender,
+    });
 
     await Transaction.create(transactionFrom);
     await Transaction.create(transactionTo);
@@ -314,11 +317,13 @@ export const sameBankTransfer = asyncHandler(
     transferFunds(senderAcc, receiverAcc, amountToTransfer);
 
     // getTransactionObjs() returns the objects from which the transactions will be created
-    const [transactionFrom, transactionTo]: Array<Object> = getTransactionObjs(
+    const [transactionFrom, transactionTo]: Array<Object> = getTransactionObjs({
       req,
       senderAcc,
-      receiverAcc
-    );
+      receiverAcc,
+      sender,
+      receiver,
+    });
 
     await Transaction.create(transactionFrom);
     await Transaction.create(transactionTo);
@@ -336,3 +341,65 @@ export const sameBankTransfer = asyncHandler(
   }
 );
 
+// @desc   Transfer funds to an account outside of this bank
+// @route  PUT /api/v1/accounts/:_id/interbank-transfer
+// @access Private
+export const interbankTransfer = asyncHandler(
+  async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void | Response> => {
+    const { _id /* account_id */ } = req.params;
+    const { user_id, receiver_account_no, amount } = req.body;
+
+    const areFieldsInvalid: string | undefined = validateAccProvidedFields(
+      req,
+      true
+    );
+
+    if (areFieldsInvalid)
+      return next(new ErrorResponse(areFieldsInvalid!, 400));
+
+    const sender: any = await User.findById(user_id);
+
+    if (!sender) return notFound({ entity: "Sender", next });
+
+    const senderAcc = await Account.findById(_id);
+
+    if (!senderAcc)
+      return notFound({ message: "Sender account not found.", next });
+
+    const invalidAccount = await Account.findOne({
+      account_number: receiver_account_no,
+    });
+
+    if (invalidAccount) return invalidInterbankTransfer(next);
+
+    const amountToTransfer: number = Number(amount);
+
+    // Make sure the user has enough funds to perform the transfer
+    const notEnoughFunds: string | undefined = checkBalance(
+      amountToTransfer,
+      senderAcc
+    );
+
+    if (notEnoughFunds) return next(new ErrorResponse(notEnoughFunds!, 400));
+
+    processInterbankTransfer(senderAcc, amountToTransfer);
+
+    const newTransaction = getTransferTransactionObj(req);
+
+    await Transaction.create(newTransaction);
+
+    await senderAcc.save();
+
+    res.status(200).json({
+      success: true,
+      message: `RD$${amountToTransfer}.00 were successfully transferred!`,
+      approvalNumber: undefined, // TODO: Generate approval number,
+      transferAmount: `RD$${amountToTransfer}.00`,
+      fee: "RD$10.00",
+    });
+  }
+);

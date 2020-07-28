@@ -85,7 +85,7 @@ export const processInterbankTransfer = (
 
 export const getInterbankTransactionObj = (req: Request, senderAcc: any) => {
   const { _id /* account_id */ } = req.params;
-  const { receiver_account_number, amount, description, } = req.body;
+  const { receiver_account_number, amount, description } = req.body;
 
   const transactionFrom = {
     account: _id,
@@ -95,13 +95,20 @@ export const getInterbankTransactionObj = (req: Request, senderAcc: any) => {
     amount,
     type: "Transfer",
   };
-}
+};
+
+type TransactionObj = {
+  req: Request;
+  senderAcc: any;
+  receiverAcc: any;
+  sender: any;
+  receiver: any;
+};
 
 export const getTransactionObjs = (
-  req: Request,
-  senderAcc: any,
-  receiverAcc: any
+  transactionObj: TransactionObj
 ): Array<Object> => {
+  const { req, senderAcc, receiverAcc, sender, receiver } = transactionObj;
   const { _id /* account_id */ } = req.params;
   const { receiver_account_number, amount, description } = req.body;
 
@@ -109,7 +116,7 @@ export const getTransactionObjs = (
     account: _id,
     description:
       description ||
-      `RD${amount} transferred to your other account ${receiver_account_number}`,
+      `RD${amount} transferred to ${receiver.firstName} ${receiver.lastName}'s account: ${receiver_account_number}.`,
     amount,
     type: "Transfer",
   };
@@ -118,7 +125,7 @@ export const getTransactionObjs = (
     account: receiverAcc._id,
     description:
       description ||
-      `RD$${amount} transferred from your other account: ${senderAcc.account_number}`,
+      `RD$${amount} transferred from ${sender.firstName} ${sender.lastName}'s account: ${senderAcc.account_number}`,
     amount,
     type: "Transfer",
   };
@@ -126,12 +133,56 @@ export const getTransactionObjs = (
   return [transactionFrom, transactionTo];
 };
 
-export const validateAccProvidedFields = (req: Request): string | undefined => {
-  const { user_id, receiver_account_no, amount } = req.body;
+export const getTransferTransactionObj = (req: Request) => {
+  const {
+    user_id,
+    receiver_account_no,
+    amount,
+    receiver_name,
+    receiver_id,
+    receiver_banks_name,
+    description,
+  } = req.body;
+
+  const { _id /* account_id */ } = req.params;
+
+  const transactionObj = {
+    account: _id,
+    description:
+      description ||
+      `RD${amount} transferred to a ${receiver_banks_name} account that belongs to ${receiver_name}: ${receiver_account_no}. Receiver id: ${receiver_id}.`,
+    amount,
+    type: "Transfer",
+  };
+
+  return transactionObj;
+};
+
+export const validateAccProvidedFields = (
+  req: Request,
+  interbank: boolean = false
+): string | undefined => {
+  const {
+    user_id,
+    receiver_account_no,
+    amount,
+    receiver_name,
+    receiver_id,
+    receiver_banks_name,
+  } = req.body;
 
   if (Number(amount) < 2) return "You must transfer at least RD$2.00.";
 
-  const body: any = { user_id, receiver_account_no, amount };
+  const body: any = !interbank
+    ? { user_id, receiver_account_no, amount }
+    : {
+        user_id,
+        receiver_account_no,
+        amount,
+        receiver_name,
+        receiver_id,
+        receiver_banks_name,
+      };
 
   const errList = [];
 

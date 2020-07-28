@@ -11,7 +11,7 @@ const UserSchema = new Schema(
       minlength: [11, "The id must have eleven characters."],
       maxlength: [11, "The id must have eleven characters."],
     },
-    name: {
+    firstName: {
       type: String,
       required: [true, "The name field is required."],
     },

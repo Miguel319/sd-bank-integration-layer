@@ -22,9 +22,7 @@ export const signup = asyncHandler(
       return next(
         new ErrorResponse("That email address is already taken.", 400)
       );
-
-    /* TODO: fetch employee data from Revel.  */
-    // When Revel data is available, verify if the email is on the Revel API
+      
     const newUser: any = await User.create({
       id,
       name,

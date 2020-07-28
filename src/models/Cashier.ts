@@ -10,9 +10,13 @@ const CashierSchema = new Schema(
         minlength: [11, "The id must have eleven characters."],
         maxlength: [11, "The id must have eleven characters."],
       },
-      name: {
+      firstName: {
         type: String,
         required: [true, "The name field is required."],
+      },
+      lastName: {
+        type: String,
+        required: [true, "The lastName field is required."],
       },
       password: {
         type: String,
@@ -36,10 +40,9 @@ const CashierSchema = new Schema(
     }
   );
 
-  //Match user entered password to hashed password in db
+  //Match cashier entered password to hashed password in db
   CashierSchema.methods.matchPassword = async function (enteredPassword: string) {
     return await bcrypt.compare(enteredPassword, this.password);
   };
-
 
   export default mongoose.model("Cashier", CashierSchema);

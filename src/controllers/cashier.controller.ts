@@ -3,7 +3,7 @@ import { Request, Response, NextFunction } from "express";
 import Cashier from "../models/Cashier";
 import { validateCashierCredentials  } from "../utils/cashier-helpers";
 import {sendTokenResponse} from "../utils/auth-helpers"
-
+import ErrorResponse from "../utils/error-response";
 
 export const signIn = asyncHandler(async (req: Request, res: Response, next: NextFunction): Promise<Response | void> => {
 
@@ -15,5 +15,17 @@ export const signIn = asyncHandler(async (req: Request, res: Response, next: Nex
     if (!isPasswordRight) return validateCashierCredentials(req, next, true);
 
     sendTokenResponse(cashier, 200, res, "sign in");
+});
 
+export const createCashier = asyncHandler( async (req: Request,res: Response,next: NextFunction): Promise<void | Response> => {
+      
+    const { id, firstName, lastName, email, password, branch } = req.body;
+    const cashierFound = await Cashier.findOne({ id });
+
+    if (cashierFound){ 
+        return next(new ErrorResponse("Cashier already created.", 400));
+    };
+
+    const newMojon: any = await Cashier.create({id,firstName,lastName,email,password,branch });
+    sendTokenResponse(newMojon, 200, res, "sign up");
 });

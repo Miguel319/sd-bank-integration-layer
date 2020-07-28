@@ -6,18 +6,11 @@ import cookieParser from "cookie-parser";
 import dotenv from "dotenv";
 import mongoose from "mongoose";
 import { errorHandler } from "./middlewares/error";
-
-// Route imports
-import accountRouter from "./routes/account.routes";
-import beneficiaryRouter from "./routes/beneficiary.routes";
-import authRouter from "./routes/auth.routes";
-import loanRouter from "./routes/loan.routes";
+import setupRoutes from "./routes/index.routes";
 
 const app = express();
 app.use(cors());
 dotenv.config();
-
-const BASE_URL: string = "/api/v1";
 
 // Mongosose configuration
 mongoose
@@ -35,11 +28,7 @@ app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 app.use(cookieParser());
 
-// Routes
-app.use(`${BASE_URL}/accounts`, accountRouter);
-app.use(`${BASE_URL}/beneficiaries`, beneficiaryRouter);
-app.use(`${BASE_URL}/auth`, authRouter);
-app.use(`${BASE_URL}/loans`, loanRouter);
+setupRoutes(app);
 
 // Error handler
 app.use(errorHandler);

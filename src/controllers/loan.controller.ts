@@ -3,16 +3,6 @@ import { Request, Response, NextFunction } from "express";
 import ErrorResponse from "../utils/error-response";
 import Loan from '../models/Loan'
 import User from "../models/User";
-import { errorMonitor } from "events";
-
-
-// type LoanType = {
-//     description?: string;
-//     total?: number;
-//     paid?: number;
-//     remaining?: number;
-//     user?: "User",
-// };
 
 export const getLoanById = asyncHandler(async(req: Request, res: Response, next: NextFunction) => {
 

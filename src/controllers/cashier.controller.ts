@@ -26,6 +26,6 @@ export const createCashier = asyncHandler( async (req: Request,res: Response,nex
         return next(new ErrorResponse("Cashier already created.", 400));
     };
 
-    const newMojon: any = await Cashier.create({id,firstName,lastName,email,password,branch });
-    sendTokenResponse(newMojon, 200, res, "sign up");
+    const newCashier: any = await Cashier.create({id,firstName,lastName,email,password,branch });
+    sendTokenResponse(newCashier, 200, res, "sign up");
 });

@@ -36,6 +36,7 @@
     "@types/node": "^14.0.23",
     "@types/shortid": "^0.0.29",
     "bigint-typescript-definitions": "^5.5.3-0",
+    "prettier": "^2.0.5",
     "ts-node": "^8.10.2",
     "ts-node-dev": "^1.0.0-pre.52",
     "typescript": "^3.9.7"

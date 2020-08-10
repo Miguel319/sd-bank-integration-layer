@@ -1,37 +1,37 @@
 import mongoose, { Schema } from "mongoose";
 
 const BeneficiarySchema = new Schema({
-  name: {
+  nombre: {
     type: String,
-    required: [true, "Name of beneficiary is required."],
+    required: [true, "El nombre del beneficiario es obligatorio."],
   },
-  type: {
+  tipo: {
     enum: ["cedula", "rnc"],
     type: String,
-    required: [true, "type of beneficiary must be either cedula or rnc."],
+    required: [true, "El tipo debe ser cédula or RNC."],
   },
   id: {
     type: String,
-    required: [true, "Cedula or rnc id must be provided"],
+    required: [true, "Debe proveer la cédula o el RNC."],
   },
-  name_bank: {
+  banco_beneficiario: {
     type: String,
-    required: [true, "Bank of beneficiary must be provided."],
+    required: [true, "Debe proveer el nombre del banco."],
   },
-  beneficiary_account: {
+  cuenta_beneficiario: {
     type: String,
     unique: true,
-    required: [true, "Beneficiary account must be provided"],
+    required: [true, "Debe proveer el número de cuenta del beneficiario."],
   },
-  user_account: {
+  cuenta_usuario: { // Se refiere a la cuenta asociada al beneficiario
     type: Schema.Types.ObjectId,
     ref: "Account",
-    required: [true, "Account reference must be provided."],
+    required: [true, "Debe proveer el _id de la cuenta asociada al beneficiario."],
   },
   email: {
     type: String,
     unique: true,
-    match: [/^[^\s@]+@[^\s@]+\.[^\s@]+$/, "Please add a valid email."],
+    match: [/^[^\s@]+@[^\s@]+\.[^\s@]+$/, "El formato del correo electrónico es inválido."],
   },
 });
 

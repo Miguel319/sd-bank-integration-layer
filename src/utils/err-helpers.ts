@@ -11,5 +11,5 @@ export type NotFound404 = {
 export const notFound = (notFoundObj: NotFound404) => {
   const { next, entity, message } = notFoundObj;
 
-  return next(new ErrorResponse(message || `${entity} not found.`, 404));
+  return next(new ErrorResponse(message || `${entity} no encontrado.`, 404));
 };

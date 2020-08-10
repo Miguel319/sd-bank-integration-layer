@@ -4,88 +4,124 @@ import { asyncHandler } from "../middlewares/async";
 import ErrorResponse from "../utils/error-response";
 import Account from "../models/Account";
 import User from "../models/User";
+import { notFound } from "../utils/err-helpers";
 
 type BeneficiaryType = {
-    name?: string;
-    type?: String;
-    id?: string;
-    name_bank?: string;
-    beneficiary_account?: string;
-    email?: string;
+  nombre?: string;
+  tipo?: String;
+  id?: string;
+  banco_beneficiario?: string;
+  cuenta_beneficiario?: string;
+  email?: string;
 };
 
-export const createBeneficiary = asyncHandler(async (req: Request, res: Response,next: NextFunction) => {
+export const createBeneficiary = asyncHandler(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const {
+      nombre,
+      tipo,
+      id,
+      banco_beneficiario,
+      cuenta_beneficiario,
+      email,
+    } = req.body;
 
-    const {name, type, id, name_bank, beneficiary_account, email} = req.body;
-    
-     // 1. search for beneficiary if beneficiary_account is from sd-bank -> return name, type, id
-    const account = await Account.find({beneficiary_account});
+    // 1. search for beneficiary if beneficiary_account is from sd-bank -> return name, type, id
+    const account = await Account.find({ numero_cuenta: cuenta_beneficiario });
 
-    const beneficiary: BeneficiaryType ={name,type,id,name_bank,beneficiary_account,email}
-    
-    if(account){
-        const _id = (account as any)._id;
-        const user = await User.find({_id});
+    const beneficiary: BeneficiaryType = {
+      nombre,
+      tipo,
+      id,
+      banco_beneficiario,
+      cuenta_beneficiario,
+      email,
+    };
 
-        beneficiary.name = `${(user as any).name} ${(user as any).lastName}`;
-        beneficiary.email = (user as any).email;
-        beneficiary.name_bank = "SD Bank";
-        //beneficiary.id = (user as any).id
-        beneficiary.beneficiary_account = (account as any).account_number;
+    if (account) {
+      const _id = (account as any)._id;
+      const user = await User.findById(_id);
 
-        await Beneficiary.create(beneficiary)
-        res.status(201).json({success: true, message: "Beneficiary created succesfully!."});
+      beneficiary.nombre = `${(user as any).nombre} ${(user as any).apellido}`;
+      beneficiary.email = (user as any).email;
+      beneficiary.banco_beneficiario = "SD Bank";
+      beneficiary.cuenta_beneficiario = (account as any).account_number;
+
+      await Beneficiary.create(beneficiary);
+      return res
+        .status(201)
+        .json({
+          exito: true,
+          mensaje: "¡Beneficiario añadido satisfactoriamente!",
+        });
     }
-    
-    //sender
-    await Beneficiary.create(beneficiary)
-    res.status(201).json({success: true, message: "Beneficiary created succesfully!."});
-    
-})
 
-export const getBeneficiaries = asyncHandler (async(req: Request, res: Response, next: NextFunction) => {
+    await Beneficiary.create(beneficiary);
+    res
+      .status(201)
+      .json({
+        exito: true,
+        mensaje: "¡Beneficiario añadido satisfactoriamente!",
+      });
+  }
+);
 
+export const getBeneficiaries = asyncHandler(
+  async (req: Request, res: Response, next: NextFunction) => {
     const beneficiaries = await Beneficiary.find({});
-    res.status(200).json(beneficiaries)
+    res.status(200).json(beneficiaries);
+  }
+);
 
-})
-
-export const updateBeneficiary = asyncHandler(async(req: Request, res: Response, next: NextFunction) =>{
-
+export const updateBeneficiary = asyncHandler(
+  async (req: Request, res: Response, next: NextFunction) => {
     //filtro like
     //req.query  // google.com/?q=products&type=celular&page=5&color=white
-    const { _id } = req.params // api/abc/products/423523523
+    const { _id } = req.params; // api/abc/products/423523523
+    const { nombre, tipo, id, email } = req.body;
+
     const beneficiary = await Beneficiary.findById(_id);
-        
-    if(!beneficiary){
-        return next(new ErrorResponse("Beneficiary not found id", 404));
-    }
-    const {name, type, id , email} = req.body; 
 
-    //object to update
-    const updateBeneficiary: BeneficiaryType = {name, type, id, email}
+    if (!beneficiary) return notFound({ entity: "Beneficiario", next });
 
-    await Beneficiary.updateOne(beneficiary, updateBeneficiary);
+    const updatedBeneficiary: BeneficiaryType = { nombre, tipo, id, email };
 
-    res.status(200).json({success: true, message: "Successfully updated beneficiary."});
-});
+    await Beneficiary.updateOne(beneficiary, updatedBeneficiary);
 
-export const deleteBeneficiary = asyncHandler(async(req: Request, res: Response, next: NextFunction): Promise<void | Response> =>{
+    res
+      .status(200)
+      .json({
+        exito: true,
+        mensaje: "¡Beneficiario actualizado satisfactoriamente!",
+      });
+  }
+);
 
-    const { _id } = req.params 
-    await Beneficiary.findOneAndDelete({_id});
+export const deleteBeneficiary = asyncHandler(
+  async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void | Response> => {
+    const { _id } = req.params;
+    await Beneficiary.findOneAndDelete({ _id });
 
-    res.status(200).json({success: true, message: "Successfully delete beneficiary."});
-});
+    res
+      .status(200)
+      .json({
+        exito: true,
+        mensaje: "¡Beneficiario eliminado satisfactoriamente!",
+      });
+  }
+);
 
-export const getBeneficiaryById = asyncHandler(async(req: Request, res: Response, next: NextFunction) => {
+export const getBeneficiaryById = asyncHandler(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const { _id } = req.params;
+    const beneficiary = await Beneficiary.findOne({ _id });
 
-    const { _id } = req.params
-    const beneficiary = await Beneficiary.findOne({_id});
-
-    if(!beneficiary){
-       return next(new ErrorResponse("Beneficiary not found",404));
-    }
+    if (!beneficiary) notFound({ entity: "Beneficiario", next });
 
     res.status(200).json(beneficiary);
-});
+  }
+);

@@ -5,88 +5,91 @@ import bcrypt from "bcrypt";
 
 const UserSchema = new Schema(
   {
-    id: {
+    cedula: {
       type: String,
-      required: [true, "The id field is mandatory"],
-      minlength: [11, "The id must have eleven characters."],
-      maxlength: [11, "The id must have eleven characters."],
+      required: [true, "La cédula es obligatoria"],
+      minlength: [11, "La cédula debe tener 11 caracteres."],
+      maxlength: [11, "La cédula debe tener 11 caracteres."],
     },
-    firstName: {
+    nombre: {
       type: String,
-      required: [true, "The name field is required."],
+      required: [true, "El nombre es obligatorio."],
     },
-    lastName: {
+    apellido: {
       type: String,
-      required: [true, "The lastName field is required."],
+      required: [true, "El apellido es obligatorio."],
     },
     email: {
       type: String,
       unique: true,
-      match: [/^[^\s@]+@[^\s@]+\.[^\s@]+$/, "Please add a valid email."],
-      required: [true, "The email address is required."],
+      match: [
+        /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+        "El formato del correo electrónico es inválido.",
+      ],
+      required: [true, "El correo electrónico es obligatorio."],
     },
-    password: {
+    contrasenia: {
       type: String,
-      required: [true, "The password field is required."],
-      minlength: [6, "The password should be at least 6 characters long."],
+      required: [true, "La contraseña es obligatoria."],
+      minlength: [6, "La contraseña debe tener al menos 6 caracteres."],
       select: false,
       match: [
         /^(?=.*[\d])(?=.*[A-Z])(?=.*[a-z])(?=.*[!@#$.%^&*])[\w!@#$.%^&*]{6,}$/,
-        "The password must have upper and lowercase letter(s), number(s) & special character(s).",
+        "La contraseña debe estar compuesta por letras mayúsculas y minúsculas, así como por números y caracteres especiales.",
       ],
     },
-    resetPasswordToken: String,
-    resetPasswordExpire: Date,
-    accounts: [
+    resetcontraseniaToken: String,
+    resetcontraseniaExpire: Date,
+    cuentas: [
       {
         type: Schema.Types.ObjectId,
         ref: "Account",
       },
     ],
-    loans: [
+    prestamos: [
       {
-         type: Schema.Types.ObjectId,
-         ref: "Loan",
-      }
-    ]
+        type: Schema.Types.ObjectId,
+        ref: "Loan",
+      },
+    ],
   },
   {
     timestamps: true, // created_at, updated_at
   }
 );
 
-// Encrypt password using bcryt
+// Encrypt contrasenia using bcryt
 UserSchema.pre("save", async function (next: any) {
   const thisRef: any = this;
 
-  if (!thisRef.isModified("password")) next();
+  if (!thisRef.isModified("contrasenia")) next();
 
   const salt: any = await bcrypt.genSalt(10);
-  thisRef.password = await bcrypt.hash(thisRef.password, salt);
+  thisRef.contrasenia = await bcrypt.hash(thisRef.contrasenia, salt);
 });
 
 UserSchema.methods.getSignedJwtToken = function () {
   return jwt.sign({ id: this._id }, (process as any).env.JWT_SECRET);
 };
 
-// Match user entered password to hashed password in db
-UserSchema.methods.matchPassword = async function (enteredPassword: string) {
-  return await bcrypt.compare(enteredPassword, this.password);
+// Match user entered contrasenia to hashed contrasenia in db
+UserSchema.methods.matchPassword = async function (enteredcontrasenia: string) {
+  return await bcrypt.compare(enteredcontrasenia, this.contrasenia);
 };
 
-// Generate and hash password token
+// Generate and hash contrasenia token
 UserSchema.methods.getResetPasswordToken = async function () {
   // Generate token
   const resetToken: string = crypto.randomBytes(20).toString("hex");
 
-  // Hash token and set to resetPassword field
-  this.resetPasswordToken = crypto
+  // Hash token and set to resetcontrasenia field
+  this.resetcontraseniaToken = crypto
     .createHash("sha256")
     .update(resetToken)
     .digest("hex");
 
   // Set expire
-  this.resetPasswordExpire = Date.now() + 10 * 60 * 1000;
+  this.resetcontraseniaExpire = Date.now() + 10 * 60 * 1000;
 
   return resetToken;
 };

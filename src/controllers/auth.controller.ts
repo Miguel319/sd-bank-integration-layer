@@ -2,7 +2,10 @@ import { Request, Response, NextFunction } from "express";
 import { asyncHandler } from "../middlewares/async";
 import User from "../models/User";
 import ErrorResponse from "../utils/error-response";
-import { validateUserCredentials, sendTokenResponse } from "../utils/auth-helpers";
+import {
+  validateUserCredentials,
+  sendTokenResponse,
+} from "../utils/auth-helpers";
 
 // @desc   Register user
 // @route  POST /api/v1/auth/signup
@@ -13,23 +16,22 @@ export const signup = asyncHandler(
     res: Response,
     next: NextFunction
   ): Promise<void | Response> => {
-    const { id, name, lastName, email, password, role } = req.body;
+    const { cedula, nombre, apellido, email, contrasenia } = req.body;
 
     // Check if there's already a user with that email
     const userFound = await User.findOne({ email });
 
     if (userFound)
       return next(
-        new ErrorResponse("That email address is already taken.", 400)
+        new ErrorResponse("Ese correo electrónico ya está tomado.", 400)
       );
-      
+
     const newUser: any = await User.create({
-      id,
-      name,
-      lastName,
+      cedula,
+      nombre,
+      apellido,
       email,
-      password,
-      role,
+      contrasenia,
     });
 
     sendTokenResponse(newUser, 200, res, "sign up");
@@ -45,17 +47,17 @@ export const signin = asyncHandler(
     res: Response,
     next: NextFunction
   ): Promise<Response | void> => {
-    const { email, password } = req.body;
+    const { email, contrasenia } = req.body;
 
     validateUserCredentials(req, next);
 
     // Check for user by its email
-    const user = await User.findOne({ email }).select("+password");
+    const user = await User.findOne({ email }).select("+contrasenia");
 
     if (!user) return validateUserCredentials(req, next, true);
 
     const isPasswordRight: boolean = await (user as any).matchPassword(
-      password
+      contrasenia
     );
 
     if (!isPasswordRight) return validateUserCredentials(req, next, true);
@@ -78,7 +80,7 @@ export const currentUser = asyncHandler(
     const user = await User.findById(id);
 
     res.status(200).json({
-      success: true,
+      exito: true,
       data: user,
     });
   }
@@ -99,7 +101,12 @@ export const forgotPassword = asyncHandler(
     const user = await User.findOne({ email });
 
     if (!user) {
-      return next(new ErrorResponse("There's no user with that email", 404));
+      return next(
+        new ErrorResponse(
+          "No existe ningún usuario con ese correo electrónico.",
+          404
+        )
+      );
     }
 
     const resetToken = (user as any).getResetPasswordToken();
@@ -109,7 +116,7 @@ export const forgotPassword = asyncHandler(
     console.log(resetToken);
 
     res.status(200).json({
-      success: true,
+      exito: true,
       data: user,
     });
   }

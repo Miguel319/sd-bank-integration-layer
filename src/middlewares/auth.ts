@@ -22,7 +22,7 @@ export const protect = asyncHandler(
 
     // Make sure token exists
     if (!token)
-      return next(new ErrorResponse("Unauthorized to access this route.", 401));
+      return next(new ErrorResponse("No está autorizado a acceder a esta ruta.", 401));
 
     // Verify token
     const decoded: any = jwt.verify(token, String(process.env.JWT_SECRET));

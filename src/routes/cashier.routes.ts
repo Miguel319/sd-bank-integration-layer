@@ -1,9 +1,9 @@
-import {Router} from 'express';
-import {createCashier, signIn} from '../controllers/cashier.controller'
+import { Router } from "express";
+import { signUp, signIn } from "../controllers/cashier.controller";
 
-const  cashierRouter: Router  = Router();
+const cashierRouter: Router = Router();
 
-cashierRouter.post("",createCashier);
-cashierRouter.post("/sign-up", signIn);
+cashierRouter.post("/sign-up", signUp);
+cashierRouter.post("/sign-in", signIn);
 
 export default cashierRouter;

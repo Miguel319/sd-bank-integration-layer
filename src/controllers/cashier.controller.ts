@@ -1,51 +1,72 @@
 import { asyncHandler } from "../middlewares/async";
 import { Request, Response, NextFunction } from "express";
 import Cashier from "../models/Cashier";
-import { validateCashierCredentials  } from "../utils/cashier-helpers";
-import {sendTokenResponse} from "../utils/auth-helpers"
+import { validateCashierCredentials } from "../utils/cashier-helpers";
+import { sendTokenResponse } from "../utils/auth-helpers";
 import ErrorResponse from "../utils/error-response";
-import { CashierService } from "../services/cashier-service";
 
-//@desc services
-const cashierService = new CashierService();
-
-// @desc     Cashier login.
-// @route    POST 
+// @desc     Cashier login
+// @route    POST
 // @access   public
-export const signIn = asyncHandler(async (req: Request, res: Response, next: NextFunction): Promise<Response | void> => {
-
-    const { id, password } = req.body;
+export const signIn = asyncHandler(
+  async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<Response | void> => {
+    const { email, contrasenia } = req.body;
 
     validateCashierCredentials(req, next);
-    const cashier = await cashierService.getByIdWithSelect(id);
-    const isPasswordRight: boolean = await (cashier as any).matchPassword(password);
+
+    const cashier = await Cashier.findOne({ email }).select("+contrasenia");
+
+    const isPasswordRight: boolean = await (cashier as any).matchPassword(
+      contrasenia
+    );
     if (!isPasswordRight) return validateCashierCredentials(req, next, true);
 
     sendTokenResponse(cashier, 200, res, "sign in");
-});
+  }
+);
 
 // @desc     a new cashier
-// @route    POST 
-// @access   private
-export const createCashier = asyncHandler( async (req: Request,res: Response,next: NextFunction): Promise<void | Response> => {
-      
-    const { id, firstName, lastName, email, password, branch } = req.body;
-    
-    const cashierFound = await cashierService.getById(id);
+// @route    POST
+// @access   public
+export const signUp = asyncHandler(
+  async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void | Response> => {
+    const { cedula, nombre, apellido, email, contrasenia, sucursal } = req.body;
 
-    if (cashierFound){ 
-        return next(new ErrorResponse("Cashier already created.", 400));
-    };
+    const cashierFound = await Cashier.findOne({ cedula });
+    if (cashierFound) {
+      return next(
+        new ErrorResponse("Ya existe un cajero con esas credenciales.", 400)
+      );
+    }
 
-    const newCashier: any = await cashierService.createCashier(req);
-    sendTokenResponse(newCashier, 200, res, "sign up");
-});
+    const newCashier = await Cashier.create({
+      cedula,
+      nombre,
+      apellido,
+      email,
+      contrasenia,
+      sucursal,
+    });
+
+    sendTokenResponse(newCashier, 201, res, "sign up");
+  }
+);
 
 // @desc     Cashier is processing the payment of a user.
-// @route    POST 
+// @route    POST
 // @access   private
-export const processLoanPayment = asyncHandler( async(req: Request,res: Response,next: NextFunction): Promise<void | Response> => {
-
-   
-
-});
+export const processLoanPayment = asyncHandler(
+  async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void | Response> => {}
+);

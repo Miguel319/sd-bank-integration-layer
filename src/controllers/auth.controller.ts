@@ -34,7 +34,7 @@ export const signup = asyncHandler(
       contrasenia,
     });
 
-    sendTokenResponse(newUser, 200, res, "sign up");
+    sendTokenResponse(newUser, 201, res, "sign up");
   }
 );
 

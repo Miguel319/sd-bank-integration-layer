@@ -8,6 +8,7 @@ const UserSchema = new Schema(
     cedula: {
       type: String,
       required: [true, "La cédula es obligatoria"],
+      unique: [true, "Ya existe un usuario con esta cédula."],
       minlength: [11, "La cédula debe tener 11 caracteres."],
       maxlength: [11, "La cédula debe tener 11 caracteres."],
     },

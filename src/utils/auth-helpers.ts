@@ -6,17 +6,17 @@ export const validateUserCredentials = (
   next: NextFunction,
   unuthorized: boolean = false
 ) => {
-  const { email, password } = req.body;
+  const { email, contrasenia } = req.body;
 
-  if (!email || !password)
+  if (!email || !contrasenia)
     return next(
-      new ErrorResponse("The email and password fields are mandatory.", 400)
+      new ErrorResponse("El correo electrónico y la contraseña son obligatorios.", 400)
     );
 
   if (unuthorized)
     return next(
       new ErrorResponse(
-        "Invalid credentials. Please check them and try again.",
+        "Credenciales inválidas. Compruebe que sean correctas e intente de nuevo.",
         401
       )
     );
@@ -27,7 +27,7 @@ export const sendTokenResponse = (
   user: any,
   statusCode: number,
   res: Response,
-  operation: string
+  operacion: string
 ) => {
   // Create token
   const token: string = user.getSignedJwtToken();
@@ -40,10 +40,10 @@ export const sendTokenResponse = (
     .status(statusCode)
     .cookie("token", token)
     .json({
-      success: true,
-      message: `${
-        operation === "sign up" ? "Signed up" : "Signed in"
-      } successfully!`,
+      exito: true,
+      mensaje: `${
+        operacion === "sign up" ? "¡Cuenta creada" : "¡Sesión iniciada"
+      } exitosamente!`,
       token,
     });
 };

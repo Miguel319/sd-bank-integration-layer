@@ -6,10 +6,14 @@ export type NotFound404 = {
   entity?: string;
   message?: string;
 };
-// (notFound: NotFound) => void
 
 export const notFound = (notFoundObj: NotFound404) => {
   const { next, entity, message } = notFoundObj;
 
-  return next(new ErrorResponse(message || `${entity} no encontrado.`, 404));
+  const customMessage: string =
+    entity === "Sucursal" || entity === "Cuenta"
+      ? "no encontrada."
+      : "no encontrado.";
+
+  return next(new ErrorResponse(message || `${entity} ${customMessage}`, 404));
 };

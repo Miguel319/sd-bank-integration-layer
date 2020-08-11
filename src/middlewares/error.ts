@@ -12,19 +12,26 @@ export const errorHandler = async (
   error.message = err.message;
 
   console.log(error);
-  
+
   // Mongoose bad ObjectId
   if (err.name === "CastError" || err.message.includes("404")) {
-    const message: string = `Unable to find resource with the ID ${
-      (err as any).value || "provided."
-    }`;
+    const entityArr: string = err.message.split(" ");
+
+    const entity = entityArr[entityArr.length -1].replace(/[""]/g, "").toLowerCase();
+
+    const message: string = `No se pudo encontrar ningún/ninguna ${entity} con el ID provisto.`;
 
     error = new ErrorResponse(message, 404);
   }
 
   // Mongoose duplicate key
   if (err.code === 11000) {
-    error = new ErrorResponse("Duplicate field value entered.", 400);
+    const uniqueField: string = Object.keys(err.keyPattern).join("");
+
+    error = new ErrorResponse(
+      `El campo '${uniqueField}' es único. Ya existe un registro con el valor provisto.`,
+      400
+    );
   }
 
   // Mongoose validation error
@@ -38,7 +45,7 @@ export const errorHandler = async (
 
   // Authorization validation
   if (err.name === "JsonWebTokenError") {
-    error = new ErrorResponse("Unauthorized to access this route.", 401);
+    error = new ErrorResponse("No está autorizado a acceder a esta ruta.", 401);
   }
 
   res.status(error.statusCode || 500).json({

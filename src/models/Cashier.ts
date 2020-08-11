@@ -5,7 +5,7 @@ import jwt from "jsonwebtoken";
 
 const { ObjectId } = Schema.Types;
 
-const CashierSchema = new Schema(
+const CajeroSchema = new Schema(
   {
     cedula: {
       type: String,
@@ -34,7 +34,7 @@ const CashierSchema = new Schema(
     },
     sucursal: {
       type: ObjectId,
-      ref: "Branch",
+      ref: "Sucursal",
     },
     resetcontraseniaToken: String,
     resetcontraseniaExpire: Date,
@@ -45,7 +45,7 @@ const CashierSchema = new Schema(
 );
 
 // Encrypt password using bcryt
-CashierSchema.pre("save", async function (next: any) {
+CajeroSchema.pre("save", async function (next: any) {
   const thisRef: any = this;
 
   if (!thisRef.isModified("contrasenia")) next();
@@ -54,17 +54,17 @@ CashierSchema.pre("save", async function (next: any) {
   thisRef.contrasenia = await bcrypt.hash(thisRef.contrasenia, salt);
 });
 
-CashierSchema.methods.getSignedJwtToken = function () {
+CajeroSchema.methods.getSignedJwtToken = function () {
   return jwt.sign({ id: this._id }, (process as any).env.JWT_SECRET);
 };
 
 //Match cashier entered password to hashed password in db
-CashierSchema.methods.matchPassword = async function (enteredPassword: string) {
+CajeroSchema.methods.matchPassword = async function (enteredPassword: string) {
   return await bcrypt.compare(enteredPassword, this.contrasenia);
 };
 
 // Generate and hash password token
-CashierSchema.methods.getResetPasswordToken = async function () {
+CajeroSchema.methods.getResetPasswordToken = async function () {
   // Generate token
   const resetToken: string = crypto.randomBytes(20).toString("hex");
 
@@ -80,4 +80,4 @@ CashierSchema.methods.getResetPasswordToken = async function () {
   return resetToken;
 };
 
-export default mongoose.model("Cashier", CashierSchema);
+export default mongoose.model("Cajero", CajeroSchema);

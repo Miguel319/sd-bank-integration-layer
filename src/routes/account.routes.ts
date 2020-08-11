@@ -22,7 +22,7 @@ accountRouter.route("").get(getAllAccounts).post(createAccount);
 
 accountRouter.get("/:_id", getAccountDetailsById);
 accountRouter.get("/:_id/transactions", transactionHistory);
-accountRouter.get("user/:_id", getUserAccounts);
+accountRouter.get("/user/:_id", getUserAccounts);
 accountRouter.get("/:account_no/user-details", getUserDetailsByAccountNo);
 
 accountRouter.put("/:_id/deposit", depositFunds);

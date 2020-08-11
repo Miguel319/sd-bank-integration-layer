@@ -1,6 +1,6 @@
 import mongoose, { Schema } from "mongoose";
 
-const BeneficiarySchema = new Schema({
+const BeneficiarioSchema = new Schema({
   nombre: {
     type: String,
     required: [true, "El nombre del beneficiario es obligatorio."],
@@ -35,4 +35,4 @@ const BeneficiarySchema = new Schema({
   },
 });
 
-export default mongoose.model("Beneficiary", BeneficiarySchema);
+export default mongoose.model("Beneficiario", BeneficiarioSchema);

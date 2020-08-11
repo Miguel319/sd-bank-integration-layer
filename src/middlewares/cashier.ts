@@ -1,7 +1,7 @@
 import { Response, Request, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 import { asyncHandler } from "./async";
-import User from "../models/User";
+import User from "../models/Usuario";
 import { notFound } from "../utils/err-helpers";
 import ErrorResponse from "../utils/error-response";
 import Cashier from "../models/Cashier";

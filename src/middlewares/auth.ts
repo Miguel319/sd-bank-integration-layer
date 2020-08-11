@@ -2,7 +2,7 @@ import { Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 import { asyncHandler } from "./async";
 import ErrorResponse from "../utils/error-response";
-import User from "../models/User";
+import User from "../models/Usuario";
 import { Request } from "express";
 
 // Protect routes

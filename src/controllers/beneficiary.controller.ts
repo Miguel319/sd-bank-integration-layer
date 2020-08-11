@@ -1,9 +1,9 @@
 import { Request, Response, NextFunction } from "express";
-import Beneficiary from "../models/Beneficiary";
+import Beneficiario from "../models/Beneficiario";
 import { asyncHandler } from "../middlewares/async";
 import ErrorResponse from "../utils/error-response";
-import Account from "../models/Account";
-import User from "../models/User";
+import Account from "../models/Cuenta";
+import User from "../models/Usuario";
 import { notFound } from "../utils/err-helpers";
 
 type BeneficiaryType = {
@@ -47,7 +47,7 @@ export const createBeneficiary = asyncHandler(
       beneficiary.banco_beneficiario = "SD Bank";
       beneficiary.cuenta_beneficiario = (account as any).account_number;
 
-      await Beneficiary.create(beneficiary);
+      await Beneficiario.create(beneficiary);
       return res
         .status(201)
         .json({
@@ -56,7 +56,7 @@ export const createBeneficiary = asyncHandler(
         });
     }
 
-    await Beneficiary.create(beneficiary);
+    await Beneficiario.create(beneficiary);
     res
       .status(201)
       .json({
@@ -68,7 +68,7 @@ export const createBeneficiary = asyncHandler(
 
 export const getBeneficiaries = asyncHandler(
   async (req: Request, res: Response, next: NextFunction) => {
-    const beneficiaries = await Beneficiary.find({});
+    const beneficiaries = await Beneficiario.find({});
     res.status(200).json(beneficiaries);
   }
 );
@@ -80,13 +80,13 @@ export const updateBeneficiary = asyncHandler(
     const { _id } = req.params; // api/abc/products/423523523
     const { nombre, tipo, id, email } = req.body;
 
-    const beneficiary = await Beneficiary.findById(_id);
+    const beneficiary = await Beneficiario.findById(_id);
 
     if (!beneficiary) return notFound({ entity: "Beneficiario", next });
 
     const updatedBeneficiary: BeneficiaryType = { nombre, tipo, id, email };
 
-    await Beneficiary.updateOne(beneficiary, updatedBeneficiary);
+    await Beneficiario.updateOne(beneficiary, updatedBeneficiary);
 
     res
       .status(200)
@@ -104,7 +104,7 @@ export const deleteBeneficiary = asyncHandler(
     next: NextFunction
   ): Promise<void | Response> => {
     const { _id } = req.params;
-    await Beneficiary.findOneAndDelete({ _id });
+    await Beneficiario.findOneAndDelete({ _id });
 
     res
       .status(200)
@@ -118,7 +118,7 @@ export const deleteBeneficiary = asyncHandler(
 export const getBeneficiaryById = asyncHandler(
   async (req: Request, res: Response, next: NextFunction) => {
     const { _id } = req.params;
-    const beneficiary = await Beneficiary.findOne({ _id });
+    const beneficiary = await Beneficiario.findOne({ _id });
 
     if (!beneficiary) notFound({ entity: "Beneficiario", next });
 

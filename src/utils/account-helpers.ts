@@ -1,4 +1,4 @@
-import { Request, NextFunction } from "express";
+import { Request } from "express";
 import ErrorResponse from "./error-response";
 
 export const validateAccounts = (
@@ -6,49 +6,50 @@ export const validateAccounts = (
   senderAcc: any,
   receiverAcc: any
 ) => {
-  let isReceiverValid: boolean = String(receiverAcc.user) === String(userId);
+  let isReceiverValid: boolean = String(receiverAcc.usuario) === String(userId);
 
   if (!isReceiverValid)
-    return "When it comes to personal transfers, both accounts must belong to the same user.";
+    return "Cuando se trata de transferencias personales, ambas cuentas deben pertenecer al mismo usuario.";
 
   let areAccountsEqual: boolean =
-    senderAcc.account_number === receiverAcc.account_number;
+    senderAcc.account_number === receiverAcc.numero_de_cuenta;
 
-  if (areAccountsEqual) return "The accounts must be different.";
+  if (areAccountsEqual) return "Las cuentas deben ser diferentes.";
 };
 
 export const checkBalance = (
   amount: number,
   senderAcc: any
 ): string | undefined => {
-  const currentBalance = senderAcc.current_balance;
+  const currentBalance = senderAcc.balance_actual;
 
   const fee: number = 10;
 
   const notEnoughFunds: boolean =
-    senderAcc.available_balance - fee < amount && currentBalance - fee < amount;
+    senderAcc.balance_disponible - fee < amount &&
+    currentBalance - fee < amount;
 
   if (notEnoughFunds)
-    return `You don't have enough funds to process this transfer. Current balance = RD$${currentBalance}. Transfer Amount = RD$${amount} + RD$${fee}.00 fee`;
+    return `Usted no dispone de fondos suficientes para realizar esta transferencia. Balance actual = RD$${currentBalance}. Cantidad a transferir = RD$${amount} + impuesto de RD$${fee}.00.`;
 };
 
 export const validateSameBankTransfer = (
   sender: any,
   receiverAcc: any
 ): undefined | string => {
-  const accBelongsToTheSameUser = sender.accounts.find(
+  const accBelongsToTheSameUser = sender.cuentas.find(
     (v: any) => String(v) === String(receiverAcc._id)
   );
 
   if (!accBelongsToTheSameUser) return;
 
-  return "The receiver account must belong to someone else within SD-Bank.";
+  return "La cuenta del destinatario debe pertenecer a alguien más (no puede ser suya).";
 };
 
 export const invalidInterbankTransfer = (next: any): any => {
   return next(
     new ErrorResponse(
-      "The receiver account must be from a different bank.",
+      "La cuenta del destinatario debe proceder de un banco diferente a 'SD-Bank.",
       400
     )
   );
@@ -63,12 +64,12 @@ export const transferFunds = (
   const tenPesosFee: number = 10;
 
   // Funds deducted from
-  senderAcc.current_balance -= amountToTransfer + tenPesosFee;
-  senderAcc.available_balance -= amountToTransfer + tenPesosFee;
+  senderAcc.balance_actual -= amountToTransfer + tenPesosFee;
+  senderAcc.balance_disponible -= amountToTransfer + tenPesosFee;
 
   // Funds transferred to
-  receiverAcc.current_balance += amountToTransfer;
-  receiverAcc.available_balance += amountToTransfer;
+  receiverAcc.balance_actual += amountToTransfer;
+  receiverAcc.balance_disponible += amountToTransfer;
 };
 
 export const processInterbankTransfer = (
@@ -79,22 +80,31 @@ export const processInterbankTransfer = (
   const tenPesosFee: number = 10;
 
   // Funds deducted from
-  senderAcc.current_balance -= amountToTransfer + tenPesosFee;
-  senderAcc.available_balance -= amountToTransfer + tenPesosFee;
+  senderAcc.balance_actual -= amountToTransfer + tenPesosFee;
+  senderAcc.balance_disponible -= amountToTransfer + tenPesosFee;
 };
 
-export const getInterbankTransactionObj = (req: Request, senderAcc: any) => {
+export const getInterbankTransactionObj = (req: Request) => {
   const { _id /* account_id */ } = req.params;
-  const { receiver_account_number, amount, description } = req.body;
+  const {
+    destinatario_numero_de_cuenta,
+    cantidad,
+    descripcion,
+    destinatario_nombre,
+    destinatario_cedula,
+    destinatario_banco,
+  } = req.body;
 
   const transactionFrom = {
-    account: _id,
-    description:
-      description ||
-      `RD${amount} Interbank bank transfer ${receiver_account_number}`,
-    amount,
-    type: "Transfer",
+    cuenta: _id,
+    descripcion:
+      descripcion ||
+      `Transferencia interbancaria por la cantidad de RD${cantidad} a ${destinatario_nombre}, portador de la cédula ${destinatario_cedula}. Cuenta: ${destinatario_numero_de_cuenta}. Banco: ${destinatario_banco}.`,
+    cantidad,
+    tipo: "Transferencia",
   };
+
+  return transactionFrom;
 };
 
 type TransactionObj = {
@@ -110,24 +120,24 @@ export const getTransactionObjs = (
 ): Array<Object> => {
   const { req, senderAcc, receiverAcc, sender, receiver } = transactionObj;
   const { _id /* account_id */ } = req.params;
-  const { receiver_account_number, amount, description } = req.body;
+  const { destinatario_numero_de_cuenta, cantidad, descripcion } = req.body;
 
   const transactionFrom = {
     account: _id,
-    description:
-      description ||
-      `RD${amount} transferred to ${receiver.firstName} ${receiver.lastName}'s account: ${receiver_account_number}.`,
-    amount,
-    type: "Transfer",
+    descripcion:
+      descripcion ||
+      `RD${cantidad} transferidos a ${receiver.nombre} ${receiver.apellido}. Cuenta: ${destinatario_numero_de_cuenta}.`,
+    cantidad,
+    tipo: "Transferencia",
   };
 
   const transactionTo = {
-    account: receiverAcc._id,
-    description:
-      description ||
-      `RD$${amount} transferred from ${sender.firstName} ${sender.lastName}'s account: ${senderAcc.account_number}`,
-    amount,
-    type: "Transfer",
+    cuenta: receiverAcc._id,
+    descripcion:
+      descripcion ||
+      `${sender.nombre} ${sender.apellido} transfirió RD$${cantidad} desde la cuenta: ${senderAcc.numero_de_cuenta}.`,
+    cantidad,
+    tipo: "Transferencia",
   };
 
   return [transactionFrom, transactionTo];
@@ -135,24 +145,23 @@ export const getTransactionObjs = (
 
 export const getTransferTransactionObj = (req: Request) => {
   const {
-    user_id,
     receiver_account_no,
-    amount,
-    receiver_name,
-    receiver_id,
-    receiver_banks_name,
-    description,
+    cantidad,
+    destinatario_nombre,
+    destinatario_cedula,
+    destinatario_banco,
+    descripcion,
   } = req.body;
 
   const { _id /* account_id */ } = req.params;
 
   const transactionObj = {
-    account: _id,
-    description:
-      description ||
-      `RD${amount} transferred to a ${receiver_banks_name} account that belongs to ${receiver_name}: ${receiver_account_no}. Receiver id: ${receiver_id}.`,
-    amount,
-    type: "Transfer",
+    cuenta: _id,
+    descripcion:
+      descripcion ||
+      `RD${cantidad} transferidos al ${destinatario_banco}. Destinatario: ${destinatario_nombre}. Número de cuenta ${receiver_account_no}. Cédula: ${destinatario_cedula}.`,
+    cantidad,
+    tipo: "Transferencia",
   };
 
   return transactionObj;
@@ -163,34 +172,46 @@ export const validateAccProvidedFields = (
   interbank: boolean = false
 ): string | undefined => {
   const {
-    user_id,
-    receiver_account_no,
-    amount,
-    receiver_name,
-    receiver_id,
-    receiver_banks_name,
+    usuario_id,
+    destinatario_numero_de_cuenta,
+    cantidad,
+    destinatario_nombre,
+    destinatario_cedula,
+    destinatario_banco,
   } = req.body;
 
-  if (Number(amount) < 2) return "You must transfer at least RD$2.00.";
-
   const body: any = !interbank
-    ? { user_id, receiver_account_no, amount }
+    ? { usuario_id, destinatario_numero_de_cuenta, cantidad }
     : {
-        user_id,
-        receiver_account_no,
-        amount,
-        receiver_name,
-        receiver_id,
-        receiver_banks_name,
+        usuario_id,
+        destinatario_numero_de_cuenta,
+        cantidad,
+        destinatario_nombre,
+        destinatario_cedula,
+        destinatario_banco,
       };
 
   const errList = [];
 
   for (let elem in body) {
-    if (!body[elem]) errList.push(`'${elem}' is mandatory. `);
+    if (!body[elem]) errList.push(`El campo '${elem}' es obligatorio. `);
   }
 
-  if (errList.length === 0) return;
+  const errorsToStr: string = errList.join("");
 
-  return errList.join("");
+  if (errorsToStr) return errorsToStr.slice(0, errorsToStr.length - 1);
+
+  if (Number(cantidad) < 2) return "Debe transferir al menos RD$2.00.";
+
+  if (destinatario_numero_de_cuenta.length !== 10 && !interbank)
+    return "El número de cuenta del destinatario debe tener 10 caracteres.";
+
+  if (
+    destinatario_numero_de_cuenta.length < 10 ||
+    (destinatario_numero_de_cuenta.length > 12 && interbank)
+  )
+    return "El número de cuenta del destinatario debe tener entre 10 a 12 caracteres.";
+
+  if (interbank && destinatario_cedula.length !== 13)
+    return "La cédula del destinatario debe tener 13 caracteres.";
 };

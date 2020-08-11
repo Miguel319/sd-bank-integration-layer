@@ -1,9 +1,9 @@
 import { Request, Response, NextFunction } from "express";
-import Account from "../models/Account";
+import Cuenta from "../models/Cuenta";
 import { asyncHandler } from "../middlewares/async";
-import User from "../models/User";
+import Usuario from "../models/Usuario";
 import ErrorResponse from "../utils/error-response";
-import Transaction from "../models/Transaction";
+import Transaccion from "../models/Transaccion";
 import { notFound } from "../utils/err-helpers";
 import {
   validateAccounts,
@@ -30,28 +30,39 @@ export const createAccount = asyncHandler(
     res: Response,
     next: NextFunction
   ): Promise<void | Response> => {
-    const { account_type, available_balance, account_number, user } = req.body;
+    const {
+      tipo_de_cuenta,
+      balance_disponible,
+      numero_de_cuenta,
+      usuario,
+    } = req.body;
 
-    const userFound: any = await User.findById(user);
+    const userFound: any = await Usuario.findById(usuario);
 
-    if (!userFound) return notFound({ entity: "User", next });
+    if (!userFound) return notFound({ entity: "Usuario", next });
+
+    if (balance_disponible < 500)
+      return next(
+        new ErrorResponse("Debe abrir la cuenta con al menos RD$500.00", 400)
+      );
 
     const accountToCreate = {
-      account_type,
-      available_balance,
-      account_number,
-      user,
+      tipo_de_cuenta,
+      balance_disponible,
+      balance_actual: balance_disponible,
+      numero_de_cuenta,
+      usuario,
     };
 
-    const accountCreated: any = await Account.create(accountToCreate);
+    const accountCreated: any = await Cuenta.create(accountToCreate);
 
-    userFound.accounts.push(accountCreated._id);
+    userFound.cuentas.push(accountCreated._id);
 
     await userFound.save();
 
     res.status(201).json({
-      success: true,
-      message: "Account created successfully!",
+      exito: true,
+      mensaje: "Cuenta creada satisfactoriamente.",
     });
   }
 );
@@ -65,7 +76,7 @@ export const getAllAccounts = asyncHandler(
     res: Response,
     next: NextFunction
   ): Promise<void | Response> => {
-    const accounts = await Account.find({});
+    const accounts = await Cuenta.find({});
 
     res.status(200).json(accounts);
   }
@@ -82,11 +93,11 @@ export const getUserAccounts = asyncHandler(
   ): Promise<void | Response> => {
     const { _id } = req.params;
 
-    const userFound: any = await User.findById(_id);
+    const userFound: any = await Usuario.findById(_id);
 
-    if (!userFound) return notFound({ message: "Message", next });
+    if (!userFound) return notFound({ message: "Usuario", next });
 
-    const accounts = await Account.find({ _id: userFound._id });
+    const accounts = await Cuenta.find({ _id: userFound._id });
 
     res.status(200).json(accounts);
   }
@@ -102,24 +113,24 @@ export const depositFunds = asyncHandler(
     next: NextFunction
   ): Promise<void | Response> => {
     const { _id } = req.params;
-    const { amount } = req.body;
+    const { cantidad } = req.body;
 
-    if (amount < 2)
-      return next(new ErrorResponse("You must deposit at least RD$2.00.", 400));
+    if (cantidad < 2)
+      return next(new ErrorResponse("Debe depositar al menos RD$2.00.", 400));
 
-    const accountFound: any = await Account.findById(_id);
+    const accountFound: any = await Cuenta.findById(_id);
 
-    // checkIfFound({ next, entity: "Account" }, accountFound);
+    if (!accountFound) return notFound({ entity: "Cuenta", next });
 
     // Add the provided balance to the existing one
-    accountFound.available_balance += Number(amount);
-    accountFound.current_balance += Number(amount);
+    accountFound.balance_disponible += Number(cantidad);
+    accountFound.balance_actual += Number(cantidad);
 
     await accountFound.save();
 
     res.status(200).json({
-      success: true,
-      message: `RD$${amount}.00 were successfully deposited into your account!`,
+      exito: true,
+      mensaje: `RD$${cantidad}.00 fueron depositados satisfactoriamente.`,
     });
   }
 );
@@ -135,9 +146,9 @@ export const getAccountDetailsById = asyncHandler(
   ): Promise<void | Response> => {
     const { _id } = req.params;
 
-    const account = await Account.findById(_id);
+    const account = await Cuenta.findById(_id);
 
-    if (!account) return notFound({ next, entity: "Account" });
+    if (!account) return notFound({ next, entity: "Cuenta" });
 
     res.status(200).json(account);
   }
@@ -154,7 +165,7 @@ export const transactionHistory = asyncHandler(
   ): Promise<void | Response> => {
     const { account } = req.params;
 
-    const transactions = await Transaction.find({ account });
+    const transactions = await Transaccion.find({ account });
 
     res.status(200).json(transactions);
   }
@@ -169,15 +180,15 @@ export const getUserDetailsByAccountNo = asyncHandler(
     res: Response,
     next: NextFunction
   ): Promise<Response | void> => {
-    const { account_no } = req.params;
+    const { numero_de_cuenta } = req.params;
 
-    const account: any = await Account.findOne({ account_number: account_no });
+    const account: any = await Cuenta.findOne({ numero_de_cuenta });
 
-    if (!account) return notFound({ next, entity: "Account" });
+    if (!account) return notFound({ next, entity: "Cuenta" });
 
-    const user = await User.findById(account.user);
+    const user = await Usuario.findById(account.usuario);
 
-    if (!user) return notFound({ next, entity: "User" });
+    if (!user) return notFound({ next, entity: "Usuario" });
 
     res.status(200).json(user);
   }
@@ -193,28 +204,32 @@ export const transferToMyself = asyncHandler(
     next: NextFunction
   ): Promise<void | Response> => {
     const { _id /* accountId */ } = req.params;
-    const { user_id, receiver_account_no, amount } = req.body;
+    const { usuario_id, destinatario_numero_de_cuenta, cantidad } = req.body;
 
     const areFieldsInvalid: string | undefined = validateAccProvidedFields(req);
 
     if (areFieldsInvalid)
       return next(new ErrorResponse(areFieldsInvalid!, 400));
 
-    const sender: any = await User.findById(user_id);
+    const sender: any = await Usuario.findById(usuario_id);
 
-    if (!sender) return notFound({ entity: "Sender", next });
+    if (!sender) return notFound({ entity: "Remitente", next });
 
     // Find account by the provided account number
-    const receiverAcc = await Account.findOne({
-      account_number: receiver_account_no,
+    const receiverAcc: any = await Cuenta.findOne({
+      numero_de_cuenta: destinatario_numero_de_cuenta,
     });
 
-    if (!receiverAcc) return notFound({ entity: "Receiver account", next });
+    if (!receiverAcc)
+      return notFound({
+        message: "No se encontró la cuenta del destinatario.",
+        next,
+      });
 
-    const senderAcc = await Account.findById(_id);
+    const senderAcc: any = await Cuenta.findById(_id);
 
     const areAccountsInvalid: string | undefined = validateAccounts(
-      user_id,
+      usuario_id,
       senderAcc,
       receiverAcc
     );
@@ -222,7 +237,7 @@ export const transferToMyself = asyncHandler(
     if (areAccountsInvalid)
       return next(new ErrorResponse(areAccountsInvalid!, 400));
 
-    const amountToTransfer: number = Number(amount);
+    const amountToTransfer: number = Number(cantidad);
 
     // Make sure the user has enough funds to perform the transfer
     const notEnoughFunds: string | undefined = checkBalance(
@@ -243,18 +258,21 @@ export const transferToMyself = asyncHandler(
       receiver: sender,
     });
 
-    await Transaction.create(transactionFrom);
-    await Transaction.create(transactionTo);
+    const newTransactionFrom: any = await Transaccion.create(transactionFrom);
+    const newTransactionTo: any = await Transaccion.create(transactionTo);
 
-    await senderAcc?.save();
-    await receiverAcc?.save();
+    senderAcc.transacciones.push(newTransactionFrom._id);
+    receiverAcc.transacciones.push(newTransactionTo._id);
+
+    await senderAcc.save();
+    await receiverAcc.save();
 
     res.status(200).json({
-      success: true,
-      message: `RD$${amountToTransfer} were successfully transferred!`,
-      approvalNumber: undefined, // TODO: Generate approval number,
-      transferAmount: amount,
-      fee: "RD$10.00",
+      exito: true,
+      mensaje: `RD$${amountToTransfer} fueron transferidos satisfactoriamente.`,
+      no_aprobacion: undefined, // TODO: Generate approval number,
+      cantidad: cantidad,
+      impuesto: "RD$10.00",
     });
   }
 );
@@ -269,29 +287,32 @@ export const sameBankTransfer = asyncHandler(
     next: NextFunction
   ): Promise<void | Response> => {
     const { _id /* account_id */ } = req.params;
-    const { user_id, receiver_account_no, amount } = req.body;
+    const { usuario_id, destinatario_numero_de_cuenta, cantidad } = req.body;
 
     const areFieldsInvalid: string | undefined = validateAccProvidedFields(req);
 
     if (areFieldsInvalid)
       return next(new ErrorResponse(areFieldsInvalid!, 400));
 
-    const sender: any = await User.findById(user_id);
+    const sender: any = await Usuario.findById(usuario_id);
 
-    if (!sender) return notFound({ entity: "Sender", next });
+    if (!sender) return notFound({ entity: "Remitente", next });
 
-    const senderAcc = await Account.findById(_id);
+    const senderAcc: any = await Cuenta.findById(_id);
 
     if (!senderAcc)
-      return notFound({ message: "Sender account not found.", next });
+      return notFound({
+        message: "No se encontró la cuenta del destinatario.",
+        next,
+      });
 
-    const receiverAcc = await Account.findOne({
-      account_number: receiver_account_no,
+    const receiverAcc: any = await Cuenta.findOne({
+      numero_de_cuenta: destinatario_numero_de_cuenta,
     });
 
     if (!receiverAcc)
       return notFound({
-        message: "The provided receiver account doesn't belong this bank.",
+        message: "La cuenta del destinatario no pertenece a este banco.",
         next,
       });
 
@@ -301,11 +322,15 @@ export const sameBankTransfer = asyncHandler(
       return next(new ErrorResponse(isTransferPersonal!, 400));
 
     // Locate receiver by its associated user_id
-    const receiver = await User.findById((receiverAcc as any).user);
+    const receiver = await Usuario.findById((receiverAcc as any).usuario);
 
-    if (!receiver) return notFound({ message: "Unable find receiver.", next });
+    if (!receiver)
+      return notFound({
+        message: "No se pudo encontrar al destinatario.",
+        next,
+      });
 
-    const amountToTransfer: number = Number(amount);
+    const amountToTransfer: number = Number(cantidad);
 
     const notEnoughFunds: string | undefined = checkBalance(
       amountToTransfer,
@@ -325,18 +350,21 @@ export const sameBankTransfer = asyncHandler(
       receiver,
     });
 
-    await Transaction.create(transactionFrom);
-    await Transaction.create(transactionTo);
+    const newTransactionFrom: any = await Transaccion.create(transactionFrom);
+    const newTransactionTo: any = await Transaccion.create(transactionTo);
+
+    senderAcc.transacciones.push(newTransactionFrom._id);
+    receiverAcc.transacciones.push(newTransactionTo._id);
 
     await senderAcc.save();
     await receiverAcc.save();
 
     res.status(200).json({
-      success: true,
-      message: `RD$${amountToTransfer}.00 were successfully transferred!`,
-      approvalNumber: undefined, // TODO: Generate approval number,
-      transferAmount: `RD$${amountToTransfer}.00`,
-      fee: "RD$10.00",
+      exito: true,
+      mensaje: `RD$${amountToTransfer}.00 fueron transferidos satisfactoriamente!`,
+      aprobacion_no: undefined, // TODO: Generate approval number,
+      cantidad: `RD$${amountToTransfer}.00`,
+      impuesto: "RD$10.00",
     });
   }
 );
@@ -351,7 +379,14 @@ export const interbankTransfer = asyncHandler(
     next: NextFunction
   ): Promise<void | Response> => {
     const { _id /* account_id */ } = req.params;
-    const { user_id, receiver_account_no, amount } = req.body;
+    const {
+      usuario_id,
+      destinatario_banco,
+      destinatario_cedula,
+      destinatario_nombre,
+      destinatario_numero_de_cuenta,
+      cantidad,
+    } = req.body;
 
     const areFieldsInvalid: string | undefined = validateAccProvidedFields(
       req,
@@ -361,22 +396,25 @@ export const interbankTransfer = asyncHandler(
     if (areFieldsInvalid)
       return next(new ErrorResponse(areFieldsInvalid!, 400));
 
-    const sender: any = await User.findById(user_id);
+    const sender: any = await Usuario.findById(usuario_id);
 
-    if (!sender) return notFound({ entity: "Sender", next });
+    if (!sender) return notFound({ entity: "Remitente", next });
 
-    const senderAcc = await Account.findById(_id);
+    const senderAcc: any = await Cuenta.findById(_id);
 
     if (!senderAcc)
-      return notFound({ message: "Sender account not found.", next });
+      return notFound({
+        message: "No se encontró la cuenta del remitente.",
+        next,
+      });
 
-    const invalidAccount = await Account.findOne({
-      account_number: receiver_account_no,
+    const invalidAccount = await Cuenta.findOne({
+      numero_de_cuenta: destinatario_numero_de_cuenta,
     });
 
     if (invalidAccount) return invalidInterbankTransfer(next);
 
-    const amountToTransfer: number = Number(amount);
+    const amountToTransfer: number = Number(cantidad);
 
     // Make sure the user has enough funds to perform the transfer
     const notEnoughFunds: string | undefined = checkBalance(
@@ -388,18 +426,23 @@ export const interbankTransfer = asyncHandler(
 
     processInterbankTransfer(senderAcc, amountToTransfer);
 
-    const newTransaction = getTransferTransactionObj(req);
+    const transactionObj = getTransferTransactionObj(req);
 
-    await Transaction.create(newTransaction);
+    const newTransaction = await Transaccion.create(transactionObj);
+
+    senderAcc.transacciones.push(newTransaction._id);
 
     await senderAcc.save();
 
     res.status(200).json({
-      success: true,
-      message: `RD$${amountToTransfer}.00 were successfully transferred!`,
-      approvalNumber: undefined, // TODO: Generate approval number,
-      transferAmount: `RD$${amountToTransfer}.00`,
-      fee: "RD$10.00",
+      exito: true,
+      mensaje: `RD$${amountToTransfer}.00 fueron transferidos satisfactoriamente.`,
+      destinatario_banco,
+      destinatario_cedula,
+      destinatario_nombre,
+      no_aprobacion: undefined, // TODO: Generate approval number,
+      cantidad: `RD$${amountToTransfer}.00`,
+      impuesto: "RD$10.00",
     });
   }
 );

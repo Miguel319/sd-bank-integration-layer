@@ -49,7 +49,7 @@ export const errorHandler = async (
   }
 
   res.status(error.statusCode || 500).json({
-    success: false,
+    exito: false,
     error: error.message,
   });
 };

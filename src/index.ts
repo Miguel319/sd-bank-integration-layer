@@ -5,7 +5,7 @@ import bodyParser from "body-parser";
 import cookieParser from "cookie-parser";
 import dotenv from "dotenv";
 import mongoose from "mongoose";
-import { errorHandler } from "./middlewares/error";
+import { errorHandler } from "./middlewares/error.middleware";
 import setupRoutes from "./routes/index.routes";
 
 const app = express();

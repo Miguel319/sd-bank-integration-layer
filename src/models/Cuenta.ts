@@ -4,50 +4,53 @@ import mongoose, { Schema, Types } from "mongoose";
 
 const { ObjectId } = Schema.Types;
 
-const AccountSchema = new Schema(
+const CuentaSchema = new Schema(
   {
-    account_type: {
+    tipo_de_cuenta: {
       type: String,
-      enum: ["Checkings", "Savings"],
+      enum: ["Cheques", "Ahorro"],
       required: [
         true,
-        "You must specify the account type (Checkings or Savings).",
+        "Debe especificar el tipo de cuenta (Cheques o Ahorro).",
       ],
     },
-    available_balance: {
+    balance_disponible: {
+      type: Number,
+      default: 0
+    },
+    balance_actual: {
       type: Number,
       default: 0,
     },
-    current_balance: {
-      type: Number,
-      default: 0,
-    },
-    account_number: {
+    numero_de_cuenta: {
       type: String,
-      unique: [true, "That account number is already taken."],
-      minlength: [10, "The account number must have at least 10 characters."],
-      maxlength: [12, "The account number can't exceed 12 characters."],
+      unique: [true, "El número de cuenta provisto ya está tomado."],
+      minlength: [10, "El número de cuenta debe tener 10 caracteres."],
+      maxlength: [10, "El número de cuenta debe tener 10 caracteres."],
     },
-    monthly_avg_balance: Number,
-    user: {
-      required: [true, "A user must be associated with this account."],
-      type: Schema.Types.ObjectId,
-      ref: "User",
+    balance_promedio_mensual: Number,
+    usuario: {
+      required: [
+        true,
+        "Esta cuenta debe pertenecer a un usuario. Debe proveer el '_id' de dicho usuario.",
+      ],
+      type: ObjectId,
+      ref: "Usuario",
     },
-    transactions: [
+    transacciones: [
       {
         type: ObjectId,
-        ref: "Transaction",
+        ref: "Transaccion",
       },
     ],
-    total_amount_in_transit: {
+    cantidad_total_en_transito: {
       type: Number,
       default: 0,
     },
-    loans: {
+    prestamos: {
       type: ObjectId,
-      ref: "Account"
-    }
+      ref: "Prestamo",
+    },
   },
   {
     timestamps: true, // created_at, updated_at
@@ -65,4 +68,4 @@ const AccountSchema = new Schema(
   next();
 });
 */
-export default mongoose.model("Account", AccountSchema);
+export default mongoose.model("Cuenta", CuentaSchema);

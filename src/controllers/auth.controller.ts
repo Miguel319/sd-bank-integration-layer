@@ -1,11 +1,11 @@
 import { Request, Response, NextFunction } from "express";
-import { asyncHandler } from "../middlewares/async";
-import User from "../models/User";
+import { asyncHandler } from "../middlewares/async.middleware";
+import Usuario from "../models/Usuario";
 import ErrorResponse from "../utils/error-response";
 import {
   validateUserCredentials,
   sendTokenResponse,
-} from "../utils/auth-helpers";
+} from "../utils/auth.helpers";
 
 // @desc   Register user
 // @route  POST /api/v1/auth/signup
@@ -19,14 +19,14 @@ export const signup = asyncHandler(
     const { cedula, nombre, apellido, email, contrasenia } = req.body;
 
     // Check if there's already a user with that email
-    const userFound = await User.findOne({ email });
+    const userFound = await Usuario.findOne({ email });
 
     if (userFound)
       return next(
-        new ErrorResponse("Ese correo electrónico ya está tomado.", 400)
+        new ErrorResponse("El correo electrónico provisto ya está tomado.", 400)
       );
 
-    const newUser: any = await User.create({
+    const newUser: any = await Usuario.create({
       cedula,
       nombre,
       apellido,
@@ -52,7 +52,7 @@ export const signin = asyncHandler(
     validateUserCredentials(req, next);
 
     // Check for user by its email
-    const user = await User.findOne({ email }).select("+contrasenia");
+    const user = await Usuario.findOne({ email }).select("+contrasenia");
 
     if (!user) return validateUserCredentials(req, next, true);
 
@@ -75,14 +75,11 @@ export const currentUser = asyncHandler(
     res: Response,
     next: NextFunction
   ): Promise<Response | void> => {
-    const { id } = (req as any).user;
+    const { _id } = (req as any).user;
 
-    const user = await User.findById(id);
+    const user = await Usuario.findById(_id);
 
-    res.status(200).json({
-      exito: true,
-      data: user,
-    });
+    res.status(200).json(user);
   }
 );
 
@@ -98,7 +95,7 @@ export const forgotPassword = asyncHandler(
     // TODO: SendGrip setup
 
     const { email } = req.body;
-    const user = await User.findOne({ email });
+    const user = await Usuario.findOne({ email });
 
     if (!user) {
       return next(
@@ -115,9 +112,6 @@ export const forgotPassword = asyncHandler(
 
     console.log(resetToken);
 
-    res.status(200).json({
-      exito: true,
-      data: user,
-    });
+    res.status(200).json(user);
   }
 );

@@ -1,6 +1,6 @@
 import {Router} from 'express';
-import { getLoanById, getAllLoansByUser, createLoan,payLoanByUser } from '../controllers/loan.controller';
-import {protectCashierRoute, identifyUser} from '../middlewares/cashier'
+import { getLoanById, getAllLoansByUser, createLoan,payLoanByUser } from '../controllers/prestamo.controller';
+import {protectCashierRoute, identifyUser} from '../middlewares/cajero.middleware'
 
 const  loanRouter: Router  = Router();
 

@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { signUp, signIn } from "../controllers/cashier.controller";
+import { signUp, signIn } from "../controllers/cajero.controller";
 
 const cashierRouter: Router = Router();
 

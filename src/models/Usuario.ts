@@ -3,11 +3,11 @@ import jwt from "jsonwebtoken";
 import crypto from "crypto";
 import bcrypt from "bcrypt";
 
-const UserSchema = new Schema(
+const UsuarioSchema = new Schema(
   {
     cedula: {
       type: String,
-      required: [true, "La cédula es obligatoria"],
+      required: [true, "La cédula es obligatoria."],
       unique: [true, "Ya existe un usuario con esta cédula."],
       minlength: [11, "La cédula debe tener 11 caracteres."],
       maxlength: [11, "La cédula debe tener 11 caracteres."],
@@ -39,6 +39,11 @@ const UserSchema = new Schema(
         "La contraseña debe estar compuesta por letras mayúsculas y minúsculas, así como por números y caracteres especiales.",
       ],
     },
+    sexo: {
+      type: String,
+      required: [true, "Debe proveer el 'sexo': Femenino o Masculino."],
+      enum: ["Femenino", "Masculino"],
+    },
     resetcontraseniaToken: String,
     resetcontraseniaExpire: Date,
     cuentas: [
@@ -60,7 +65,7 @@ const UserSchema = new Schema(
 );
 
 // Encrypt contrasenia using bcryt
-UserSchema.pre("save", async function (next: any) {
+UsuarioSchema.pre("save", async function (next: any) {
   const thisRef: any = this;
 
   if (!thisRef.isModified("contrasenia")) next();
@@ -69,17 +74,19 @@ UserSchema.pre("save", async function (next: any) {
   thisRef.contrasenia = await bcrypt.hash(thisRef.contrasenia, salt);
 });
 
-UserSchema.methods.getSignedJwtToken = function () {
+UsuarioSchema.methods.getSignedJwtToken = function () {
   return jwt.sign({ id: this._id }, (process as any).env.JWT_SECRET);
 };
 
 // Match user entered contrasenia to hashed contrasenia in db
-UserSchema.methods.matchPassword = async function (enteredcontrasenia: string) {
+UsuarioSchema.methods.matchPassword = async function (
+  enteredcontrasenia: string
+) {
   return await bcrypt.compare(enteredcontrasenia, this.contrasenia);
 };
 
 // Generate and hash contrasenia token
-UserSchema.methods.getResetPasswordToken = async function () {
+UsuarioSchema.methods.getResetPasswordToken = async function () {
   // Generate token
   const resetToken: string = crypto.randomBytes(20).toString("hex");
 
@@ -95,4 +102,4 @@ UserSchema.methods.getResetPasswordToken = async function () {
   return resetToken;
 };
 
-export default mongoose.model("User", UserSchema);
+export default mongoose.model("Usuario", UsuarioSchema);

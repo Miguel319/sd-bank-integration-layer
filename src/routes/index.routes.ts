@@ -1,8 +1,8 @@
 import authRouter from "./auth.routes";
-import beneficiaryRouter from "./beneficiary.routes";
-import loanRouter from "./loan.routes";
-import accountRouter from "./account.routes";
-import cashierRouter from "./cashier.routes";
+import beneficiaryRouter from "./beneficiario.routes";
+import loanRouter from "./prestamo.routes";
+import accountRouter from "./cuenta.routes";
+import cashierRouter from "./cajero.routes";
 import sucursalRouter from "./sucursal.routes";
 
 const setupRoutes = (app: any): void => {

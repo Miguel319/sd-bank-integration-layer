@@ -1,5 +1,5 @@
 import {Router} from 'express';
-import { createBeneficiary, getBeneficiaries,updateBeneficiary } from '../controllers/beneficiary.controller';
+import { createBeneficiary, getBeneficiaries,updateBeneficiary } from '../controllers/beneficiario.controller';
 
 const  beneficiaryRouter: Router  = Router();
 

@@ -1,10 +1,10 @@
 import { Response, Request, NextFunction } from "express";
 import jwt from "jsonwebtoken";
-import { asyncHandler } from "./async";
-import User from "../models/User";
-import { notFound } from "../utils/err-helpers";
+import { asyncHandler } from "./async.middleware";
+import User from "../models/Usuario";
+import { notFound } from "../utils/err.helpers";
 import ErrorResponse from "../utils/error-response";
-import Cashier from "../models/Cashier";
+import Cashier from "../models/Cajero";
 
 export const identifyUser = asyncHandler( async (req: Request, res: Response, next: NextFunction) => {
 

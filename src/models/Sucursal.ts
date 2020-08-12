@@ -46,11 +46,4 @@ SucursalSchema.pre("save", function (next: any) {
   next();
 });
 
-SucursalSchema.pre("updateOne", function (next: any) {
-  const thisRef: any = this;
-
-  thisRef.direccion = `${thisRef.calle} ${thisRef.numero}, ${thisRef.codigo_postal}. ${thisRef.ciudad}, República Dominicana.`;
-  next();
-});
-
 export default mongoose.model("Sucursal", SucursalSchema);

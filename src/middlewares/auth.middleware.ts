@@ -1,8 +1,8 @@
 import { Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
-import { asyncHandler } from "./async";
+import { asyncHandler } from "./async.middleware";
 import ErrorResponse from "../utils/error-response";
-import User from "../models/User";
+import User from "../models/Usuario";
 import { Request } from "express";
 
 // Protect routes

@@ -1,25 +1,25 @@
 import { Request, Response, NextFunction } from "express";
 import Cuenta from "../models/Cuenta";
-import { asyncHandler } from "../middlewares/async";
+import { asyncHandler } from "../middlewares/async.middleware";
 import Usuario from "../models/Usuario";
 import ErrorResponse from "../utils/error-response";
 import Transaccion from "../models/Transaccion";
-import { notFound } from "../utils/err-helpers";
+import { notFound } from "../utils/err.helpers";
 import {
   validateAccounts,
   validateSameBankTransfer,
   processInterbankTransfer,
   getTransferTransactionObj,
-} from "../utils/account-helpers";
+} from "../utils/account.helpers";
 import {
   getTransactionObjs,
   validateAccProvidedFields,
-} from "../utils/account-helpers";
+} from "../utils/account.helpers";
 import {
   checkBalance,
   transferFunds,
   invalidInterbankTransfer,
-} from "../utils/account-helpers";
+} from "../utils/account.helpers";
 
 // @desc   Create account
 // @route  POST /api/v1/accounts
@@ -30,26 +30,14 @@ export const createAccount = asyncHandler(
     res: Response,
     next: NextFunction
   ): Promise<void | Response> => {
-    const {
-      tipo_de_cuenta,
-      balance_disponible,
-      numero_de_cuenta,
-      usuario,
-    } = req.body;
+    const { tipo_de_cuenta, numero_de_cuenta, usuario } = req.body;
 
     const userFound: any = await Usuario.findById(usuario);
 
     if (!userFound) return notFound({ entity: "Usuario", next });
 
-    if (balance_disponible < 500)
-      return next(
-        new ErrorResponse("Debe abrir la cuenta con al menos RD$500.00", 400)
-      );
-
     const accountToCreate = {
       tipo_de_cuenta,
-      balance_disponible,
-      balance_actual: balance_disponible,
       numero_de_cuenta,
       usuario,
     };

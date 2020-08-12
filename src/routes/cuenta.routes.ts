@@ -1,20 +1,20 @@
 import { Router } from "express";
-import { interbankTransfer } from "../controllers/account.controller";
+import { interbankTransfer } from "../controllers/cuenta.controller";
 import {
   transferToMyself,
   sameBankTransfer,
   getUserDetailsByAccountNo,
-} from "../controllers/account.controller";
+} from "../controllers/cuenta.controller";
 import {
   depositFunds,
   getAccountDetailsById,
   transactionHistory,
-} from "../controllers/account.controller";
+} from "../controllers/cuenta.controller";
 import {
   createAccount,
   getAllAccounts,
   getUserAccounts,
-} from "../controllers/account.controller";
+} from "../controllers/cuenta.controller";
 
 const accountRouter: Router = Router();
 

@@ -1,11 +1,11 @@
 import { Request, Response, NextFunction } from "express";
-import { asyncHandler } from "../middlewares/async";
+import { asyncHandler } from "../middlewares/async.middleware";
 import Usuario from "../models/Usuario";
 import ErrorResponse from "../utils/error-response";
 import {
   validateUserCredentials,
   sendTokenResponse,
-} from "../utils/auth-helpers";
+} from "../utils/auth.helpers";
 
 // @desc   Register user
 // @route  POST /api/v1/auth/signup

@@ -1,10 +1,9 @@
 import { Request, Response, NextFunction } from "express";
 import Beneficiario from "../models/Beneficiario";
-import { asyncHandler } from "../middlewares/async";
-import ErrorResponse from "../utils/error-response";
+import { asyncHandler } from "../middlewares/async.middleware";
 import Account from "../models/Cuenta";
 import User from "../models/Usuario";
-import { notFound } from "../utils/err-helpers";
+import { notFound } from "../utils/err.helpers";
 
 type BeneficiaryType = {
   nombre?: string;
@@ -48,21 +47,17 @@ export const createBeneficiary = asyncHandler(
       beneficiary.cuenta_beneficiario = (account as any).account_number;
 
       await Beneficiario.create(beneficiary);
-      return res
-        .status(201)
-        .json({
-          exito: true,
-          mensaje: "¡Beneficiario añadido satisfactoriamente!",
-        });
-    }
-
-    await Beneficiario.create(beneficiary);
-    res
-      .status(201)
-      .json({
+      return res.status(201).json({
         exito: true,
         mensaje: "¡Beneficiario añadido satisfactoriamente!",
       });
+    }
+
+    await Beneficiario.create(beneficiary);
+    res.status(201).json({
+      exito: true,
+      mensaje: "¡Beneficiario añadido satisfactoriamente!",
+    });
   }
 );
 
@@ -88,12 +83,10 @@ export const updateBeneficiary = asyncHandler(
 
     await Beneficiario.updateOne(beneficiary, updatedBeneficiary);
 
-    res
-      .status(200)
-      .json({
-        exito: true,
-        mensaje: "¡Beneficiario actualizado satisfactoriamente!",
-      });
+    res.status(200).json({
+      exito: true,
+      mensaje: "¡Beneficiario actualizado satisfactoriamente!",
+    });
   }
 );
 
@@ -106,12 +99,10 @@ export const deleteBeneficiary = asyncHandler(
     const { _id } = req.params;
     await Beneficiario.findOneAndDelete({ _id });
 
-    res
-      .status(200)
-      .json({
-        exito: true,
-        mensaje: "¡Beneficiario eliminado satisfactoriamente!",
-      });
+    res.status(200).json({
+      exito: true,
+      mensaje: "¡Beneficiario eliminado satisfactoriamente!",
+    });
   }
 );
 

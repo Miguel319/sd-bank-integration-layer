@@ -5,7 +5,7 @@ import accountRouter from "./cuenta.routes";
 import cashierRouter from "./cajero.routes";
 import sucursalRouter from "./sucursal.routes";
 import coreIntegrationRoutes from "../core-integration/routes/index.routes";
-import perfilRoutes from "./perfil.routes";
+// import perfilRoutes from "./perfil.routes";
 
 const setupRoutes = (app: any): void => {
   coreIntegrationRoutes(app);
@@ -19,7 +19,7 @@ const setupRoutes = (app: any): void => {
   app.use(`${BASE_URL}/loans`, loanRouter);
   app.use(`${BASE_URL}/cashier`, cashierRouter);
   app.use(`${BASE_URL}/sucursales`, sucursalRouter);
-  app.use(`${BASE_URL}/perfiles`, perfilRoutes);
+  // app.use(`${BASE_URL}/perfiles`, perfilRoutes);
 };
 
 export default setupRoutes;

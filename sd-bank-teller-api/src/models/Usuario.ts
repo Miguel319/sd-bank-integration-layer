@@ -5,34 +5,51 @@ import jwt from "jsonwebtoken";
 
 const { ObjectId } = Schema.Types;
 
-const UsuarioSchema = new Schema({
-  email: {
-    type: String,
-    unique: true,
-    match: [
-      /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-      "El formato del correo electrónico es inválido.",
-    ],
-    required: [true, "El correo electrónico es obligatorio."],
+const UsuarioSchema = new Schema(
+  {
+    email: {
+      type: String,
+      unique: true,
+      match: [
+        /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+        "El formato del correo electrónico es inválido.",
+      ],
+      required: [true, "El correo electrónico es obligatorio."],
+    },
+    contrasenia: {
+      type: String,
+      required: [true, "La contraseña es obligatoria."],
+      minlength: [6, "La contraseña debe tener al menos 6 caracteres."],
+      select: false,
+      match: [
+        /^(?=.*[\d])(?=.*[A-Z])(?=.*[a-z])(?=.*[!@#$.%^&*])[\w!@#$.%^&*]{6,}$/,
+        "La contraseña debe estar compuesta por letras mayúsculas y minúsculas, así como por números y caracteres especiales.",
+      ],
+    },
+    tipo_entidad_asociada: {
+      type: String,
+      required: [
+        true,
+        "Debe especificar el tipo de la entidad asociada ('tipo_entidad_asociada'): Cliente, Cajero o Admin.",
+      ],
+      enum: ["Cliente", "Cajero", "Admin"],
+    },
+    // entidad_asociada: {
+      // type: ObjectId,
+      // refPath: "tipo_entidad_asociada",
+    // },
+    perfil: {
+      type: ObjectId,
+      ref: "Perfil",
+      required: [true, "Debe especificar el perfil (rol) del usuario."],
+    },
+    resetcontraseniaToken: String,
+    resetcontraseniaExpire: Date,
   },
-  contrasenia: {
-    type: String,
-    required: [true, "La contraseña es obligatoria."],
-    minlength: [6, "La contraseña debe tener al menos 6 caracteres."],
-    select: false,
-    match: [
-      /^(?=.*[\d])(?=.*[A-Z])(?=.*[a-z])(?=.*[!@#$.%^&*])[\w!@#$.%^&*]{6,}$/,
-      "La contraseña debe estar compuesta por letras mayúsculas y minúsculas, así como por números y caracteres especiales.",
-    ],
-  },
-  perfil: {
-    type: ObjectId,
-    ref: "Perfil",
-    required: [true, "Debe especificar el perfil (rol) del usuario."],
-  },
-  resetcontraseniaToken: String,
-  resetcontraseniaExpire: Date,
-});
+  {
+    timestamps: true, // created_at, updated_at
+  }
+);
 
 // Encrypt contrasenia using bcryt
 UsuarioSchema.pre("save", async function (next: any) {

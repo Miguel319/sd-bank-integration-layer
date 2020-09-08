@@ -1,25 +1,12 @@
 import mongoose, { Schema } from "mongoose";
-import jwt from "jsonwebtoken";
-import crypto from "crypto";
 import bcrypt from "bcrypt";
+import crypto from "crypto";
+import jwt from "jsonwebtoken";
+
+const { ObjectId } = Schema.Types;
 
 const UsuarioSchema = new Schema(
   {
-    cedula: {
-      type: String,
-      required: [true, "La cédula es obligatoria."],
-      unique: [true, "Ya existe un usuario con esta cédula."],
-      minlength: [11, "La cédula debe tener 11 caracteres."],
-      maxlength: [11, "La cédula debe tener 11 caracteres."],
-    },
-    nombre: {
-      type: String,
-      required: [true, "El nombre es obligatorio."],
-    },
-    apellido: {
-      type: String,
-      required: [true, "El apellido es obligatorio."],
-    },
     email: {
       type: String,
       unique: true,
@@ -39,25 +26,25 @@ const UsuarioSchema = new Schema(
         "La contraseña debe estar compuesta por letras mayúsculas y minúsculas, así como por números y caracteres especiales.",
       ],
     },
-    sexo: {
+    tipo_entidad_asociada: {
       type: String,
-      required: [true, "Debe proveer el 'sexo': Femenino o Masculino."],
-      enum: ["Femenino", "Masculino"],
+      required: [
+        true,
+        "Debe especificar el tipo de la entidad asociada ('tipo_entidad_asociada'): Cliente, Cajero o Admin.",
+      ],
+      enum: ["Cliente", "Cajero", "Admin"],
+    },
+    // entidad_asociada: {
+    // type: ObjectId,
+    // refPath: "tipo_entidad_asociada",
+    // },
+    perfil: {
+      type: ObjectId,
+      ref: "Perfil",
+      required: [true, "Debe especificar el perfil (rol) del usuario."],
     },
     resetcontraseniaToken: String,
     resetcontraseniaExpire: Date,
-    cuentas: [
-      {
-        type: Schema.Types.ObjectId,
-        ref: "Account",
-      },
-    ],
-    prestamos: [
-      {
-        type: Schema.Types.ObjectId,
-        ref: "Loan",
-      },
-    ],
   },
   {
     timestamps: true, // created_at, updated_at

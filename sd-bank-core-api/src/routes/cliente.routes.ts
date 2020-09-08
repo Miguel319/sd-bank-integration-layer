@@ -1,3 +1,4 @@
+import { errorHandler } from "./../middlewares/error.middleware";
 import { Router } from "express";
 import {
   getAllClientes,
@@ -12,13 +13,13 @@ const clienteRouter: Router = Router();
 
 clienteRouter
   .route("")
-  .get(loggerMiddleware, getAllClientes)
-  .post(loggerMiddleware, createCliente);
-  
+  .get(/*loggerMiddleware, */getAllClientes)
+  .post(/*loggerMiddleware,  */createCliente);
+
 clienteRouter
   .route("/:_id")
-  .get(loggerMiddleware, getClienteById)
-  .post(loggerMiddleware, updateCliente)
-  .delete(loggerMiddleware, deleteCliente);
+  .get(/*loggerMiddleware,  */ getClienteById)
+  .post(/*loggerMiddleware,  */updateCliente)
+  .delete(/*loggerMiddleware,  */deleteCliente);
 
 export default clienteRouter;

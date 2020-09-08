@@ -8,6 +8,7 @@ import {
   sendTokenResponse,
   validateUserCredentials,
 } from "../utils/auth.helpers";
+import Cliente from "../models/Cliente";
 
 // @desc   Register user
 // @route  POST /api/v1/auth/signup
@@ -18,7 +19,13 @@ export const signup = asyncHandler(
     res: Response,
     next: NextFunction
   ): Promise<void | Response> => {
-    const { cedula, nombre, apellido, email, contrasenia } = req.body;
+    const {
+      cedula,
+      email,
+      contrasenia,
+      tipo_entidad_asociada,
+      perfil,
+    } = req.body;
 
     // Check if there's already a user with that email
     const userFound = await Usuario.findOne({ email });
@@ -28,13 +35,30 @@ export const signup = asyncHandler(
         new ErrorResponse("El correo electrónico provisto ya está tomado.", 400)
       );
 
+    let cliente: any = undefined;
+
+    if (tipo_entidad_asociada === "Cliente") {
+      cliente = await Cliente.findOne({ cedula });
+
+      if (!cliente)
+        return notFound({
+          message: "No se encontró ningún cliente con la cédula provista.",
+          next,
+        });
+    }
+
     const newUser: any = await Usuario.create({
-      cedula,
-      nombre,
-      apellido,
       email,
       contrasenia,
+      tipo_entidad_asociada,
+      entidad_asociada: cliente._id || undefined,
+      perfil,
     });
+
+    if (cliente) {
+      cliente.usuario = newUser._id;
+      await cliente.save();
+    }
 
     sendTokenResponse(newUser, 201, res, "sign up");
   }
@@ -54,9 +78,7 @@ export const signin = asyncHandler(
     validateUserCredentials(req, next);
 
     // Check for user by its email
-    const user = await Usuario.findOne({ email }).select(
-      "+contrasenia"
-    );
+    const user = await Usuario.findOne({ email }).select("+contrasenia");
 
     if (!user) return validateUserCredentials(req, next, true);
 

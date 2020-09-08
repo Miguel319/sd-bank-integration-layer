@@ -1,3 +1,5 @@
+import { configureRoutes } from "./routes/index.routes";
+
 import { Response } from "express";
 /*Main dependencies */
 import express from "express";
@@ -7,7 +9,6 @@ import cookieParser from "cookie-parser";
 import dotenv from "dotenv";
 import mongoose from "mongoose";
 import { errorHandler } from "./middlewares/error.middleware";
-import { setupRoutes } from "./routes/index.routes";
 import { Request } from "express";
 
 const app = express();
@@ -30,7 +31,7 @@ app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 app.use(cookieParser());
 
-setupRoutes(app);
+configureRoutes(app);
 
 app.use("/*", (req: Request, res: Response) =>
   res.sendFile(__dirname, "index.html")
@@ -39,7 +40,7 @@ app.use("/*", (req: Request, res: Response) =>
 // Error handler
 app.use(errorHandler);
 
-const PORT = 3002 || process.env.PORT;
+const PORT = 3004 || process.env.PORT;
 
 app.listen(PORT, () =>
   console.log(`Servidor a la escucha en puerto: ${PORT}.`)

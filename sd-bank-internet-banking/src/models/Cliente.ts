@@ -1,5 +1,4 @@
 import mongoose, { Schema } from "mongoose";
-import { NextFunction } from "express";
 
 const { ObjectId } = Schema.Types;
 

@@ -1,4 +1,5 @@
 import mongoose, { Schema } from "mongoose";
+import { NextFunction } from "express";
 
 const { ObjectId } = Schema.Types;
 
@@ -24,9 +25,9 @@ const ClienteSchema = new Schema(
       required: [true, "Debe especificar el 'sexo': Femenino o Masculino."],
       enum: ["Femenino", "Masculino"],
     },
-    usuario_cliente: {
+    usuario: {
       type: ObjectId,
-      ref: "UsuarioCliente",
+      ref: "Usuario",
     },
     cuentas_bancarias: [
       {

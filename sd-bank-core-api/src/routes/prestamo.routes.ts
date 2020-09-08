@@ -18,12 +18,12 @@ prestamoRouter.get(
 
 prestamoRouter
   .route("/:_id")
-  .get(loggerMiddleware, getPrestamoById)
-  .put(loggerMiddleware, updatePrestamo);
+  .get(/*loggerMiddleware,  */ getPrestamoById)
+  .put(/*loggerMiddleware,  */updatePrestamo);
 
 prestamoRouter
   .route("")
-  .get(loggerMiddleware, getAllPrestamos)
-  .post(loggerMiddleware, createPrestamo);
+  .get(/*loggerMiddleware,  */ getAllPrestamos)
+  .post(/*loggerMiddleware,  */ createPrestamo);
 
 export default prestamoRouter;

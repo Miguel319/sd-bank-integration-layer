@@ -13,8 +13,8 @@ const perfilRoutes = Router();
 
 perfilRoutes
   .route("")
-  .get(loggerMiddleware, getPerfiles)
-  .post(loggerMiddleware, createPerfil);
+  .get(/*loggerMiddleware,  */getPerfiles)
+  .post(/*loggerMiddleware,  */createPerfil);
 
 perfilRoutes
   .route("/:_id")

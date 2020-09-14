@@ -1,7 +1,6 @@
 import axios from "axios";
 import { asyncHandler } from "../../middlewares/async.middleware";
 import { Request, Response, NextFunction } from "express";
-import { startSession } from "mongoose";
 
 export const getPrestamos = asyncHandler(
     async (req: Request, res: Response, next: NextFunction): Promise<any> => {
@@ -25,11 +24,8 @@ export const getPrestamos = asyncHandler(
   );
 
   export const createPrestamo = asyncHandler(
-    async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-      const session = await startSession();
-  //  "usuario_id": "5f5557eb18ec400988eb6b0d"
+    async (req: Request, res: Response, next: NextFunction): Promise<void> => { 
       try {
-        session.startTransaction();
         const { descripcion, cantidad_total, usuario_id } = req.body;
         const CORE_API_URL = String(process.env.CORE_API_URL);
   
@@ -42,15 +38,11 @@ export const getPrestamos = asyncHandler(
   
         const { data } = await axios.post(`${CORE_API_URL}/prestamos/`, newPrestamo);
 
-
-        await session.commitTransaction();
-        session.endSession();
-  
+         
         res.status(201).json(data);
+
       } catch (error) {
-        await session.abortTransaction();
-        session.endSession();
-  
+         
         res.status(400).json(error.response.data);
       }
     }

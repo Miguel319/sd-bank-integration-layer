@@ -4,8 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "ts-node-dev --respawn src/index.ts",
-    "dev": "ts-node-dev --respawn src/index.ts",
+    "start": "ts-node-dev --respawn src/index.ts --max-old-space-size=4096",
+    "dev": "ts-node-dev --respawn src/index.ts --max-old-space-size=4096",
     "build": "tsc",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -39,5 +39,9 @@
     "mongoose": "^5.9.24",
     "winston": "^3.3.3",
     "winston-mongodb": "^5.0.3"
+  },
+  "engines": {
+    "npm": "6.13.4",
+    "node": "12.16.1"
   }
 }

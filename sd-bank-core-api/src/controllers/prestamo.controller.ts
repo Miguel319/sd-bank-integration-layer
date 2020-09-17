@@ -58,7 +58,7 @@ export const createPrestamo = asyncHandler(
       descripcion,
       cantidad_total,
       remaining: Number(cantidad_total),
-      usuario_id,
+      cliente: usuario_id,
     };
 
     const clientFound: any = await Cliente.findById(usuario_id);

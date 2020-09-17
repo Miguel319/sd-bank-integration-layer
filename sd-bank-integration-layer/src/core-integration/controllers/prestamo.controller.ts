@@ -47,3 +47,16 @@ export const getPrestamos = asyncHandler(
       }
     }
   );
+
+  export const updatePrestamo = asyncHandler(
+    async (req: Request, res: Response, next: NextFunction): Promise<any> => {
+      const { _id } = req.params;
+      const { descripcion } = req.params;
+      const CORE_API_URL = String(process.env.CORE_API_URL);
+  
+      const { data } = await axios.put(`${CORE_API_URL}/prestamos/`, _id);
+  
+    res.status(200).json(data);
+     
+    }
+  );

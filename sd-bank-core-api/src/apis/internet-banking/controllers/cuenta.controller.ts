@@ -17,22 +17,7 @@ import {
   validateSameBankTransfer,
 } from "../utils/cuenta.helpers";
 import ErrorResponse from "../../../shared/utils/error-response";
-import { notFound } from '../../../shared/utils/err.helpers';
-
-// @desc   Get all cuentas
-// @route  GET /api/v1/cuentas
-// @access Private
-export const getAllAccounts = asyncHandler(
-  async (
-    req: Request,
-    res: Response,
-    next: NextFunction
-  ): Promise<void | Response> => {
-    const cuentas = await Cuenta.find({});
-
-    res.status(200).json(cuentas);
-  }
-);
+import { notFound } from "../../../shared/utils/err.helpers";
 
 // @desc   Display the cuentas from a given usuario by searching for his/her id
 // @route  GET /api/v1/cuentas/usuario/:_id

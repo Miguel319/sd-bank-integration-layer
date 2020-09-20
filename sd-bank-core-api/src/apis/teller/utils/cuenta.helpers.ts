@@ -2,24 +2,30 @@ import { Request } from "express";
 import { Types } from "mongoose";
 
 export const validarReqRetiro = (req: Request): string => {
-  const { cedula, _id } = req.params;
+  const { numero_de_cuenta } = req.params;
   const { monto } = req.body;
 
-  const params: any = { cedula, _id };
+  const body: any = {
+    monto,
+  };
 
   const errList: Array<string> = [];
 
-  if (!monto)
-    errList.push("Debe proveer el campo 'monto' en el cuerpo de la petición. ");
+  if (!numero_de_cuenta)
+    errList.push(
+      "Debe proveer el campo 'numero_de_cuenta' en los parámetros de la petición. "
+    );
 
-  for (const campo in params) {
-    if (!params[campo])
+  for (const campo in body) {
+    if (!body[campo])
       errList.push(
-        `Debe proveer el siguiente campo en los parámetros: '${campo}'.`
+        `Debe proveer el siguiente campo en el cuerpo: '${campo}'. `
       );
   }
 
-  return errList.join("");
+  const errorStringified = errList.join("");
+
+  return errorStringified.slice(0, errorStringified.length - 1) || "";
 };
 
 export const validarReqDeposito = (req: Request): string => {
@@ -42,6 +48,18 @@ export const validarReqDeposito = (req: Request): string => {
 export const retirarFondosCuenta = (cuenta: any, monto: number): void => {
   cuenta.balance_actual -= monto;
   cuenta.balance_disponible -= monto;
+};
+
+export const checkBalanceRetiro = (
+  cuenta: any,
+  monto: number,
+  montoFormat: string
+): string => {
+  const excedido = monto - 10 > cuenta.balance_disponible;
+
+  return excedido
+    ? `Tiene RD$${cuenta.balance_disponible} disponibles en su cuenta, pero está intentando retirar RD$${montoFormat}. El retiro no puede exceder el balance - RD$10 (impuesto).`
+    : "";
 };
 
 export const getTransaccionDeposito = (

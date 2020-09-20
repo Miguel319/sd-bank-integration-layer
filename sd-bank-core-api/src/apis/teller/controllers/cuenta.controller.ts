@@ -12,7 +12,11 @@ import { notFound } from "../../../shared/utils/err.helpers";
 import { errorHandler } from "../../../shared/middlewares/error.middleware";
 import Transaccion from "../../../shared/models/Transaccion";
 import ErrorResponse from "../../../shared/utils/error-response";
-import { getTransaccionDeposito } from "../utils/cuenta.helpers";
+import { checkBalanceRetiro } from "../utils/cuenta.helpers";
+import {
+  getTransaccionDeposito,
+  validarReqRetiro,
+} from "../utils/cuenta.helpers";
 
 // @desc     Cashier process withdraw from cliente
 // @route    PUT
@@ -25,16 +29,17 @@ export const processCuentaRetiro = asyncHandler(
   ): Promise<void | Response> => {
     const session: ClientSession = await startSession();
 
+    const { numero_de_cuenta } = req.params;
+    const { monto } = req.body;
+
     try {
       session.startTransaction();
 
-      const { cedula, _id } = req.params;
-      const { monto } = req.body;
+      const datosInvalidos: any = validarReqRetiro(req);
 
-      // Aquí no se comprueba si la cédula es válida porque ya hay un middleware que lo valida.
-      const cliente: any = await Cliente.findOne({ cedula });
+      if (datosInvalidos) return next(new ErrorResponse(datosInvalidos, 400));
 
-      const cuentaEncontrada = await Cuenta.findById(_id);
+      const cuentaEncontrada = await Cuenta.findOne({ numero_de_cuenta });
 
       if (!cuentaEncontrada)
         return notFound({
@@ -42,17 +47,16 @@ export const processCuentaRetiro = asyncHandler(
           next,
         });
 
-      const cuentaCliente = cliente.cuentas.find(
-        (cuenta: any) => cuenta === _id
+      const montoNumber: number = Number(monto);
+      const montoFormat: string = montoNumber.toLocaleString();
+
+      const retiroInvalido = checkBalanceRetiro(
+        cuentaEncontrada,
+        monto,
+        montoFormat
       );
 
-      if (!cuentaCliente)
-        return notFound({
-          message: "La cuenta provista no pertenece al cliente.",
-          next,
-        });
-
-      const montoNumber: number = Number(monto);
+      if (retiroInvalido) return next(new ErrorResponse(retiroInvalido, 400));
 
       retirarFondosCuenta(cuentaEncontrada, montoNumber);
 
@@ -63,7 +67,7 @@ export const processCuentaRetiro = asyncHandler(
 
       res.status(200).json({
         exito: true,
-        mensaje: `¡Se retiraron RD$${montoNumber.toLocaleString()} satisfactoriamente!`,
+        mensaje: `¡Se retiraron RD$${montoFormat} satisfactoriamente!`,
       });
     } catch (error) {
       await session.abortTransaction();
@@ -71,6 +75,26 @@ export const processCuentaRetiro = asyncHandler(
 
       return errorHandler(error, req, res, next);
     }
+  }
+);
+
+export const getCuentasFromClienteCedula = asyncHandler(
+  async (req: Request, res: Response, next: NextFunction): Promise<any> => {
+    const { cedula } = req.params;
+
+    const clienteEncontrado = await Cliente.findOne({ cedula });
+
+    if (!clienteEncontrado)
+      return notFound({
+        message: "No se encontó ningún cliente con la cédula provista.",
+        next,
+      });
+
+    const cuentasDelCliente = await Cuenta.find({
+      cliente: clienteEncontrado._id,
+    });
+
+    res.status(200).json(cuentasDelCliente);
   }
 );
 

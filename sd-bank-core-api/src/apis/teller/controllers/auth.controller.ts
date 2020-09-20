@@ -3,9 +3,10 @@ import { asyncHandler } from "../../../shared/middlewares/async.middleware";
 import { NextFunction, Response, Request } from "express";
 import { sendTokenResponse } from "../../../shared/utils/auth.helpers";
 import { validateCashierCredentials } from "../utils/cajero.helpers";
-import Cajero from "../../../shared/models/Cajero";
 import { ClientSession, startSession } from "mongoose";
 import ErrorResponse from "../../../shared/utils/error-response";
+import Usuario from "../../../shared/models/Usuario";
+import Cajero from "../../../shared/models/Cajero";
 
 // @desc     Cashier login
 // @route    POST
@@ -20,7 +21,7 @@ export const signIn = asyncHandler(
 
     validateCashierCredentials(req, next);
 
-    const cashier = await Cajero.findOne({ email }).select("+contrasenia");
+    const cashier = await Usuario.findOne({ email }).select("+contrasenia");
 
     const isPasswordRight: boolean = await (cashier as any).matchPassword(
       contrasenia
@@ -61,7 +62,7 @@ export const signUp = asyncHandler(
         );
       }
 
-      const newCashier = await Cajero.create({
+      const newCashier = await Usuario.create({
         cedula,
         nombre,
         apellido,

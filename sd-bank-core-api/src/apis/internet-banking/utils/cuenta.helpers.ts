@@ -1,5 +1,5 @@
 import { Request } from "express";
-import ErrorResponse from "../../../shared/error-response";
+import ErrorResponse from "../../../shared/utils/error-response";
 
 export const validateAccounts = (
   userId: any,

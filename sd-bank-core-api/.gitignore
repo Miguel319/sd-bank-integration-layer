@@ -4,3 +4,5 @@ node_modules
 src/secret
 .*env
 src/config/config.env
+sd-bank-internet-banking
+sd-bank-teller-api

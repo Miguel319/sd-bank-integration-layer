@@ -1,8 +1,12 @@
 import { Router } from "express";
-import { processPrestamoPago } from "../controllers/prestamo.controller";
+import {
+  processPrestamoPago,
+  getPretamosByClienteId,
+} from "../controllers/prestamo.controller";
 
 const prestamoRouter: Router = Router();
 
-prestamoRouter.put("/:_id/pagar", processPrestamoPago);
+prestamoRouter.get("/cliente/:_id", getPretamosByClienteId);
+prestamoRouter.put("/:_id/pago", processPrestamoPago);
 
 export default prestamoRouter;

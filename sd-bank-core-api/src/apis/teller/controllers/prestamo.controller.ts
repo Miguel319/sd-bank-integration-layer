@@ -10,7 +10,20 @@ import {
 } from "../utils/prestamo.helpers";
 import ErrorResponse from "../../../shared/utils/error-response";
 import { errorHandler } from "../../../shared/middlewares/error.middleware";
-import Transaccion from "../../../shared/models/Transaccion";
+
+export const getPretamosByClienteId = asyncHandler(
+  async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void | Response> => {
+    const { _id } = req.params;
+
+    const prestamos = await Prestamo.find({ cliente: _id });
+
+    res.status(200).json(prestamos);
+  }
+);
 
 // @desc     Cashier processes loan from client
 // @route    POST
@@ -32,8 +45,14 @@ export const processPrestamoPago = asyncHandler(
       // Aquí no se comprueba si la cédula es válida porque ya hay un middleware que lo valida.
       const cliente: any = await Cliente.findOne({ cedula }).session(session);
 
+      if (!cliente)
+        return notFound({
+          message: "No se halló ningún cliente con la cédula provista.",
+          next,
+        });
+
       const prestamoPerteneceACliente = Boolean(
-        cliente.prestamos.find((prestamoId: any) => prestamoId === _id)
+        cliente.prestamos.find((prestamoId: any) => String(prestamoId) === String(_id))
       );
 
       if (!prestamoPerteneceACliente)

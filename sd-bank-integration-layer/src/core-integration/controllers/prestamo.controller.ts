@@ -54,7 +54,7 @@ export const getPrestamos = asyncHandler(
       const { descripcion } = req.params;
       const CORE_API_URL = String(process.env.CORE_API_URL);
   
-      const { data } = await axios.put(`${CORE_API_URL}/prestamos/`, _id);
+      const { data } = await axios.put(`${CORE_API_URL}/prestamos/`,{_id, descripcion});
   
     res.status(200).json(data);
      

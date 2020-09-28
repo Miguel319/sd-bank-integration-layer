@@ -58,6 +58,7 @@ export const createCliente = asyncHandler(
 
 export const updateCliente = asyncHandler(
   async (req: Request, res: Response, next: NextFunction): Promise<any> => {
+    const { _id } = req.params;
     const { cedula, nombre, apellido, sexo } = req.body;
     const CORE_API_URL = String(process.env.CORE_API_URL);
 
@@ -68,7 +69,7 @@ export const updateCliente = asyncHandler(
       sexo,
     };
 
-    const { data } = await axios.post(`${CORE_API_URL}/clientes/`, cliente);
+    const { data } = await axios.put(`${CORE_API_URL}/clientes/${_id}`, cliente);
 
     res.status(201).json(data);
   }

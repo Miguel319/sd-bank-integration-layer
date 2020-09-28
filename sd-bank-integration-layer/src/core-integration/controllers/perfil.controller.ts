@@ -1,7 +1,7 @@
 import axios from "axios";
 import { asyncHandler } from "../../middlewares/async.middleware";
 import { Request, Response, NextFunction } from "express";
-
+//http://localhost:3002/core-api/v1
 
 export const getPerfiles = asyncHandler(
     async (req: Request, res: Response, next: NextFunction): Promise<any> => {
@@ -44,5 +44,22 @@ export const getPerfiles = asyncHandler(
          
         res.status(400).json(error.response.data);
       }
+    }
+  );
+
+  export const updatePerfiles = asyncHandler(
+    async (req: Request, res: Response, next: NextFunction): Promise<any> => {
+      const { _id } = req.params;
+      const { rol, descripcion } = req.body;
+      const CORE_API_URL = String(process.env.CORE_API_URL);
+
+      const perfil = {
+        rol,
+        descripcion,
+      };
+  
+      const { data } = await axios.post(`${CORE_API_URL}/perfiles/`, perfil);
+  
+      res.status(201).json(data);
     }
   );

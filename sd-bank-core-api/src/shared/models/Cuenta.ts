@@ -47,10 +47,6 @@ const CuentaSchema = new Schema(
       type: Number,
       default: 0,
     },
-    prestamos: {
-      type: ObjectId,
-      ref: "Prestamo",
-    },
   },
   {
     timestamps: true, // created_at, updated_at

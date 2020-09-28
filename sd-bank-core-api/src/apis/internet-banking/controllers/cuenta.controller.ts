@@ -22,7 +22,7 @@ import { notFound } from "../../../shared/utils/err.helpers";
 // @desc   Display the cuentas from a given usuario by searching for his/her id
 // @route  GET /api/v1/cuentas/usuario/:_id
 // @access Private
-export const getUserAccounts = asyncHandler(
+export const getClienteCuentasByClienteId = asyncHandler(
   async (
     req: Request,
     res: Response,
@@ -34,7 +34,28 @@ export const getUserAccounts = asyncHandler(
 
     if (!usuarioFound) return notFound({ message: "Cliente", next });
 
-    const cuentas = await Cuenta.find({ _id: usuarioFound._id });
+    const cuentas = await Cuenta.find({ cliente: usuarioFound._id });
+
+    res.status(200).json(cuentas);
+  }
+);
+
+// @desc   Display the cuentas from a given usuario by searching for his/her id
+// @route  GET /api/v1/cuentas/usuario/:_id
+// @access Private
+export const getClienteCuentasByClienteCedula = asyncHandler(
+  async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void | Response> => {
+    const { cedula } = req.params;
+
+    const usuarioFound: any = await Cliente.findOne({ cedula });
+
+    if (!usuarioFound) return notFound({ message: "Cliente", next });
+
+    const cuentas = await Cuenta.find({ cliente: usuarioFound._id });
 
     res.status(200).json(cuentas);
   }

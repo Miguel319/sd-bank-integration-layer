@@ -7,6 +7,8 @@ import ErrorResponse from "../../../shared/utils/error-response";
 import Cuenta from "../../../shared/models/Cuenta";
 import Transaccion from "../../../shared/models/Transaccion";
 import { getCuentaFieldsToUpdt } from "../../../shared/utils/cuenta.helpers";
+import { ClientSession, startSession } from "mongoose";
+import { errorHandler } from "../../../shared/middlewares/error.middleware";
 
 // @desc   Update cuenta
 // @route  GET /api/v1/cuentas
@@ -108,18 +110,43 @@ export const deleteCuenta = asyncHandler(
     res: Response,
     next: NextFunction
   ): Promise<void | Response> => {
-    const { _id } = req.params;
+    const session: ClientSession = await startSession();
+    session.startTransaction();
 
-    const cuenta = await Cuenta.findById(_id);
+    try {
+      const { _id } = req.params;
 
-    if (!cuenta) return notFound({ entity: "Cuenta", next });
+      const cuenta: any = await Cuenta.findById(_id);
 
-    await Cuenta.deleteOne(cuenta);
+      if (!cuenta) return notFound({ entity: "Cuenta", next });
 
-    res.status(200).json({
-      exito: true,
-      mensaje: "¡Cuenta eliminada satisfactoriamente!",
-    });
+      const cliente: any = await Cliente.findOne({
+        cuentas_bancarias: cuenta._id,
+      });
+
+      const idxToDeleteFrom = cliente.cuentas_bancarias.indexOf(cuenta._id);
+
+      cliente.cuentas_bancarias.splice(idxToDeleteFrom, 1);
+
+      await cliente.save();
+
+      cuenta.cliente.splice();
+
+      await Cuenta.deleteOne(cuenta);
+
+      await session.commitTransaction();
+      session.endSession();
+
+      res.status(200).json({
+        exito: true,
+        mensaje: "¡Cuenta eliminada satisfactoriamente!",
+      });
+    } catch (error) {
+      await session.abortTransaction();
+      session.endSession();
+
+      return errorHandler(error, req, res, next);
+    }
   }
 );
 

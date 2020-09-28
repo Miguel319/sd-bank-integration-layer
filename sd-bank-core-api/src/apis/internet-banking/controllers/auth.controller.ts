@@ -1,3 +1,4 @@
+import { Types, startSession, ClientSession } from "mongoose";
 import { asyncHandler } from "../../../shared/middlewares/async.middleware";
 import { NextFunction, Response, Request } from "express";
 import Usuario from "../../../shared/models/Usuario";
@@ -7,7 +8,9 @@ import {
   validateUserCredentials,
 } from "../../../shared/utils/auth.helpers";
 import ErrorResponse from "../../../shared/utils/error-response";
-import { notFound } from '../../../shared/utils/err.helpers';
+import { notFound } from "../../../shared/utils/err.helpers";
+import Perfil from "../../../shared/models/Perfil";
+import { errorHandler } from "../../../shared/middlewares/error.middleware";
 
 // @desc   Register user
 // @route  POST /api/v1/auth/signup
@@ -18,48 +21,93 @@ export const signup = asyncHandler(
     res: Response,
     next: NextFunction
   ): Promise<void | Response> => {
-    const {
-      cedula,
-      email,
-      contrasenia,
-      tipo_entidad_asociada,
-      perfil,
-    } = req.body;
+    const session: ClientSession = await startSession();
+    session.startTransaction();
 
-    // Check if there's already a user with that email
-    const userFound = await Usuario.findOne({ email });
+    try {
+      const {
+        cedula,
+        email,
+        contrasenia,
+        tipo_entidad_asociada,
+        perfil,
+      } = req.body;
 
-    if (userFound)
-      return next(
-        new ErrorResponse("El correo electrónico provisto ya está tomado.", 400)
-      );
+      // Check if there's already a user with that email
+      const userFound = await Usuario.findOne({ email });
 
-    let cliente: any = undefined;
+      if (userFound)
+        return next(
+          new ErrorResponse(
+            "El correo electrónico provisto ya está tomado.",
+            400
+          )
+        );
 
-    if (tipo_entidad_asociada === "Cliente") {
-      cliente = await Cliente.findOne({ cedula });
+      let cliente: any = undefined;
 
-      if (!cliente)
-        return notFound({
-          message: "No se encontró ningún cliente con la cédula provista.",
-          next,
+      if (tipo_entidad_asociada === "Cliente") {
+        cliente = await Cliente.findOne({ cedula });
+
+        if (!cliente)
+          return notFound({
+            message: "No se encontró ningún cliente con la cédula provista.",
+            next,
+          });
+
+        const usuarioRegistrado = await Usuario.findOne({
+          entidad_asociada: cliente._id,
         });
+
+        if (usuarioRegistrado) {
+          return next(
+            new ErrorResponse(
+              "Usted ya posee una cuenta de Internet Banking.",
+              400
+            )
+          );
+        }
+      }
+
+      const perfilFound = await Perfil.findOne({ rol: perfil });
+
+      if (!perfilFound)
+        return notFound({ message: "El perfil provisto es inválido.", next });
+
+      const newUser: any = await Usuario.create({
+        email,
+        contrasenia,
+        tipo_entidad_asociada,
+        entidad_asociada: (cliente._id as Types.ObjectId) || undefined,
+        perfil: perfilFound._id,
+      });
+
+      if (cliente) {
+        cliente.usuario = newUser._id;
+        await cliente.save();
+      }
+
+      await session.commitTransaction();
+      session.endSession();
+
+      sendTokenResponse(newUser, 201, res, "sign up", cliente);
+    } catch (error) {
+      await session.abortTransaction();
+      session.endSession();
+      return errorHandler(error, req, res, next);
     }
+  }
+);
 
-    const newUser: any = await Usuario.create({
-      email,
-      contrasenia,
-      tipo_entidad_asociada,
-      entidad_asociada: cliente._id || undefined,
-      perfil,
-    });
+export const fetchPerfiles = asyncHandler(
+  async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<Response | void> => {
+    const perfiles = await Perfil.find({});
 
-    if (cliente) {
-      cliente.usuario = newUser._id;
-      await cliente.save();
-    }
-
-    sendTokenResponse(newUser, 201, res, "sign up");
+    res.status(200).json(perfiles);
   }
 );
 
@@ -72,22 +120,39 @@ export const signin = asyncHandler(
     res: Response,
     next: NextFunction
   ): Promise<Response | void> => {
-    const { email, contrasenia } = req.body;
+    const session: ClientSession = await startSession();
+    session.startTransaction();
 
-    validateUserCredentials(req, next);
+    try {
+      const { email, contrasenia } = req.body;
 
-    // Check for user by its email
-    const user = await Usuario.findOne({ email }).select("+contrasenia");
+      validateUserCredentials(req, next);
 
-    if (!user) return validateUserCredentials(req, next, true);
+      // Check for user by its email
+      const user: any = await Usuario.findOne({ email }).select("+contrasenia");
 
-    const isPasswordRight: boolean = await (user as any).matchPassword(
-      contrasenia
-    );
+      if (!user) return validateUserCredentials(req, next, true);
 
-    if (!isPasswordRight) return validateUserCredentials(req, next, true);
+      console.log("user", user);
 
-    sendTokenResponse(user, 200, res, "sign in");
+      const cliente = await Cliente.findById(user.entidad_asociada);
+
+      const isPasswordRight: boolean = await (user as any).matchPassword(
+        contrasenia
+      );
+
+      if (!isPasswordRight) return validateUserCredentials(req, next, true);
+
+      await session.commitTransaction();
+      session.endSession();
+
+      sendTokenResponse(user, 200, res, "sign in", cliente);
+    } catch (error) {
+      await session.abortTransaction();
+      session.endSession();
+
+      return errorHandler(error, req, res, next);
+    }
   }
 );
 

@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { protect } from "../../../shared/middlewares/auth.middleware";
+import { getPerfiles } from "../../core/controllers/perfil.controller";
 import {
   signin,
   signup,
@@ -10,8 +11,9 @@ import {
 const authRouter: Router = Router();
 
 authRouter.get("/current-user", protect, currentUser);
-authRouter.post("/sign-in", signin);
-authRouter.post("/sign-up", signup);
+authRouter.get("/perfiles", /* protect,*/ getPerfiles);
+authRouter.post("/signin", signin);
+authRouter.post("/signup", signup);
 authRouter.post("/forgot-password", forgotPassword);
 
 export default authRouter;

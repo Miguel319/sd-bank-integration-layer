@@ -1,6 +1,6 @@
 import { Response, Request, NextFunction } from "express";
 import { asyncHandler } from "../../../shared/middlewares/async.middleware";
-import Cliente from "../../../shared/models/Cliente";
+import Perfil from "../../../shared/models/Perfil";
 import Usuario from "../../../shared/models/Usuario";
 import {
   sendTokenResponse,
@@ -8,6 +8,10 @@ import {
 } from "../../../shared/utils/auth.helpers";
 import { notFound } from "../../../shared/utils/err.helpers";
 import ErrorResponse from "../../../shared/utils/error-response";
+import { validateRegistration } from "../../../shared/utils/auth.helpers";
+import Admin from "../../../shared/models/Admin";
+import { Types, ClientSession, startSession } from "mongoose";
+import { errorHandler } from "../../../shared/middlewares/error.middleware";
 
 // @desc   Register user
 // @route  POST /api/v1/auth/signup
@@ -18,48 +22,87 @@ export const signup = asyncHandler(
     res: Response,
     next: NextFunction
   ): Promise<void | Response> => {
-    const {
-      cedula,
-      email,
-      contrasenia,
-      tipo_entidad_asociada,
-      perfil,
-    } = req.body;
+    const session: ClientSession = await startSession();
+    session.startTransaction();
 
-    // Check if there's already a user with that email
-    const userFound = await Usuario.findOne({ email });
+    try {
+      const {
+        cedula,
+        email,
+        contrasenia,
+        tipo_entidad_asociada,
+        perfil,
+      } = req.body;
 
-    if (userFound)
-      return next(
-        new ErrorResponse("El correo electrónico provisto ya está tomado.", 400)
-      );
+      const invalidFields: string = validateRegistration(req);
 
-    let cliente: any = undefined;
+      if (invalidFields) return next(new ErrorResponse(invalidFields, 400));
 
-    if (tipo_entidad_asociada === "Cliente") {
-      cliente = await Cliente.findOne({ cedula });
+      // Check if there's already a user with that email
+      const userFound = await Usuario.findOne({ email });
 
-      if (!cliente)
-        return notFound({
-          message: "No se encontró ningún cliente con la cédula provista.",
-          next,
+      if (userFound)
+        return next(
+          new ErrorResponse(
+            "El correo electrónico provisto ya está tomado.",
+            400
+          )
+        );
+
+      let admin: any = undefined;
+
+      if (tipo_entidad_asociada === "Admin") {
+        admin = await Admin.findOne({ cedula });
+
+        if (!admin)
+          return notFound({
+            message:
+              "No se encontró ningún administrador con la cédula provista.",
+            next,
+          });
+
+        const usuarioRegistrado = await Usuario.findOne({
+          entidad_asociada: admin._id,
         });
+
+        if (usuarioRegistrado) {
+          return next(
+            new ErrorResponse(
+              "Usted ya posee una cuenta de administrador.",
+              400
+            )
+          );
+        }
+      }
+
+      const perfilFound = await Perfil.findOne({ rol: perfil });
+
+      if (!perfilFound)
+        return notFound({ message: "El perfil provisto es inválido.", next });
+
+      const newUser: any = await Usuario.create({
+        email,
+        contrasenia,
+        tipo_entidad_asociada,
+        entidad_asociada: (admin._id as Types.ObjectId) || undefined,
+        perfil: perfilFound._id,
+      });
+
+      if (admin) {
+        admin.usuario = newUser._id;
+        await admin.save();
+      }
+
+      await session.commitTransaction();
+      session.endSession();
+
+      sendTokenResponse(newUser, 201, res, "sign up", admin);
+    } catch (error) {
+      await session.abortTransaction();
+      session.endSession();
+
+      return errorHandler(error, req, res, next);
     }
-
-    const newUser: any = await Usuario.create({
-      email,
-      contrasenia,
-      tipo_entidad_asociada,
-      entidad_asociada: cliente._id || undefined,
-      perfil,
-    });
-
-    if (cliente) {
-      cliente.usuario = newUser._id;
-      await cliente.save();
-    }
-
-    sendTokenResponse(newUser, 201, res, "sign up");
   }
 );
 
@@ -77,7 +120,7 @@ export const signin = asyncHandler(
     validateUserCredentials(req, next);
 
     // Check for user by its email
-    const user = await Usuario.findOne({ email }).select("+contrasenia");
+    const user: any = await Usuario.findOne({ email }).select("+contrasenia");
 
     if (!user) return validateUserCredentials(req, next, true);
 
@@ -87,7 +130,9 @@ export const signin = asyncHandler(
 
     if (!isPasswordRight) return validateUserCredentials(req, next, true);
 
-    sendTokenResponse(user, 200, res, "sign in");
+    const admin = await Admin.findById(user.entidad_asociada);
+
+    sendTokenResponse(user, 200, res, "sign in", admin);
   }
 );
 

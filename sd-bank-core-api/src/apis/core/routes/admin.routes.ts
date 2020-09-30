@@ -20,6 +20,7 @@ adminRouter.get("/por_cedula/:cedula", getAdminByCedula);
 adminRouter
   .route("/:_id")
   .get(/*loggerMiddleware,  */ getAdminById)
+  .put(/*loggerMiddleware,  */ updateAdmin)
   .post(/*loggerMiddleware,  */ updateAdmin)
   .delete(/*loggerMiddleware,  */ deleteAdmin);
 

@@ -17,18 +17,31 @@ export const signIn = asyncHandler(
     res: Response,
     next: NextFunction
   ): Promise<Response | void> => {
-    const { email, contrasenia } = req.body;
+    const session: ClientSession = await startSession();
+    session.startTransaction();
 
-    validateCashierCredentials(req, next);
+    try {
+      const { email, contrasenia } = req.body;
 
-    const cashier = await Usuario.findOne({ email }).select("+contrasenia");
+      validateCashierCredentials(req, next);
 
-    const isPasswordRight: boolean = await (cashier as any).matchPassword(
-      contrasenia
-    );
-    if (!isPasswordRight) return validateCashierCredentials(req, next, true);
+      const cashier = await Usuario.findOne({ email }).select("+contrasenia");
 
-    sendTokenResponse(cashier, 200, res, "sign in");
+      const isPasswordRight: boolean = await (cashier as any).matchPassword(
+        contrasenia
+      );
+      if (!isPasswordRight) return validateCashierCredentials(req, next, true);
+
+      await session.commitTransaction();
+      session.endSession();
+
+      sendTokenResponse(cashier, 200, res, "sign in");
+    } catch (error) {
+      await session.abortTransaction();
+      session.endSession();
+
+      return errorHandler(error, req, res, next);
+    }
   }
 );
 
@@ -42,18 +55,10 @@ export const signUp = asyncHandler(
     next: NextFunction
   ): Promise<void | Response> => {
     const session: ClientSession = await startSession();
+    session.startTransaction();
 
     try {
-      session.startTransaction();
-
-      const {
-        cedula,
-        nombre,
-        apellido,
-        email,
-        contrasenia,
-        sucursal,
-      } = req.body;
+      const { cedula, nombre, apellido, sucursal } = req.body;
 
       const cashierFound = await Cajero.findOne({ cedula });
       if (cashierFound) {
@@ -66,8 +71,6 @@ export const signUp = asyncHandler(
         cedula,
         nombre,
         apellido,
-        email,
-        contrasenia,
         sucursal,
       });
 

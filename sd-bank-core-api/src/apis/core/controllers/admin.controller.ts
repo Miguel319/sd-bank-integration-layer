@@ -64,7 +64,7 @@ export const createAdmin = asyncHandler(
 
       const { cedula, nombre, apellido, sexo } = req.body;
 
-      const adminFound = await Admin.findOne({ cedula });
+      const adminFound = await Admin.findOne({ cedula }).session(session);
 
       if (adminFound)
         return next(
@@ -97,24 +97,53 @@ export const createAdmin = asyncHandler(
 // @access Private
 export const updateAdmin = asyncHandler(
   async (req: Request, res: Response, next: NextFunction): Promise<any> => {
-    const { _id } = req.params;
+    const session: ClientSession = await startSession();
 
-    const adminToUpdt = getAdminToUpdt(req);
+    try {
+      session.startTransaction();
+      const { _id } = req.params;
+      const { cedula, nombre, apellido, sexo } = req.body;
 
-    if (!adminToUpdt)
-      return next(
-        new ErrorResponse(
-          "Debe proveer al menos un campo para realizar la actualización.",
-          400
-        )
-      );
+      const areFieldsOk: boolean = getAdminToUpdt(req);
 
-    await Admin.updateOne({ _id }, adminToUpdt);
+      if (!areFieldsOk)
+        return next(
+          new ErrorResponse(
+            "Debe proveer al menos un campo para realizar la actualización.",
+            400
+          )
+        );
 
-    res.status(200).json({
-      exito: true,
-      mensaje: "¡Admin actualizado satisfactoriamente!",
-    });
+      const adminFound: any = await Admin.findById(_id);
+
+      if (!adminFound)
+        return notFound({
+          message: "No se halló ningún admin con el _id provisto.",
+          next,
+        });
+
+      const updatedAdmin = {
+        cedula: cedula || adminFound.cedula,
+        nombre: nombre || adminFound.cedula,
+        apellido: apellido || adminFound.apellido,
+        sexo: sexo || adminFound.sexo,
+      };
+
+      await Admin.updateOne(adminFound, updatedAdmin, { session });
+
+      await session.commitTransaction();
+      session.endSession();
+
+      res.status(200).json({
+        exito: true,
+        mensaje: "¡Admin actualizado satisfactoriamente!",
+      });
+    } catch (error) {
+      await session.abortTransaction();
+      session.endSession();
+
+      return errorHandler(error, req, res, next);
+    }
   }
 );
 

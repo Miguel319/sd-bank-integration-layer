@@ -64,7 +64,7 @@ export const createCliente = asyncHandler(
 
       const { cedula, nombre, apellido, sexo } = req.body;
 
-      const clienteFound = await Cliente.findOne({ cedula });
+      const clienteFound = await Cliente.findOne({ cedula }).session(session);
 
       if (clienteFound)
         return next(
@@ -87,6 +87,8 @@ export const createCliente = asyncHandler(
       });
     } catch (error) {
       await session.abortTransaction();
+      session.endSession();
+
       return errorHandler(error, req, res, next);
     }
   }
@@ -97,24 +99,38 @@ export const createCliente = asyncHandler(
 // @access Private
 export const updateCliente = asyncHandler(
   async (req: Request, res: Response, next: NextFunction): Promise<any> => {
-    const { _id } = req.params;
+    const session = await startSession();
 
-    const clienteToUpdt = getClienteToUpdt(req);
+    try {
+      session.startTransaction();
 
-    if (!clienteToUpdt)
-      return next(
-        new ErrorResponse(
-          "Debe proveer al menos un campo para realizar la actualización.",
-          400
-        )
-      );
+      const { _id } = req.params;
 
-    await Cliente.updateOne({ _id }, clienteToUpdt);
+      const clienteToUpdt = getClienteToUpdt(req);
 
-    res.status(200).json({
-      exito: true,
-      mensaje: "¡Cliente actualizado satisfactoriamente!",
-    });
+      if (!clienteToUpdt)
+        return next(
+          new ErrorResponse(
+            "Debe proveer al menos un campo para realizar la actualización.",
+            400
+          )
+        );
+
+      await Cliente.updateOne({ _id }, clienteToUpdt, { session });
+
+      await session.commitTransaction();
+      session.endSession();
+
+      res.status(200).json({
+        exito: true,
+        mensaje: "¡Cliente actualizado satisfactoriamente!",
+      });
+    } catch (error) {
+      await session.abortTransaction();
+      session.endSession();
+
+      return errorHandler(error, req, res, next);
+    }
   }
 );
 
@@ -137,7 +153,7 @@ export const deleteCliente = asyncHandler(
       if (cliente.prestamos.length > 0)
         return next(
           new ErrorResponse(
-            "Este cliente tiene préstamos. Debe saldar el préstamo antes de borrarlo",
+            "Este cliente tiene préstamos. Debe saldar los préstamos antes de eliminar el cliente.",
             400
           )
         );

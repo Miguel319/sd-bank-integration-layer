@@ -125,18 +125,16 @@ export const signin = asyncHandler(
     if (!user) return validateUserCredentials(req, next, true);
 
     const admin = await Admin.findById(user.entidad_asociada);
-    if (!admin) {
+
+    if (!admin)
       return next(
         new ErrorResponse(
           "Sólo los administradores pueden iniciar sesión.",
           401
         )
       );
-    }
 
-    const isPasswordRight: boolean = await (user as any).matchPassword(
-      contrasenia
-    );
+    const isPasswordRight: boolean = await user.matchPassword(contrasenia);
 
     if (!isPasswordRight) return validateUserCredentials(req, next, true);
 

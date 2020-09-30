@@ -39,7 +39,7 @@ export const signup = asyncHandler(
       if (invalidFields) return next(new ErrorResponse(invalidFields, 400));
 
       // Check if there's already a user with that email
-      const userFound = await Usuario.findOne({ email });
+      const userFound = await Usuario.findOne({ email }).session(session);
 
       if (userFound)
         return next(
@@ -49,54 +49,54 @@ export const signup = asyncHandler(
           )
         );
 
-      let admin: any = undefined;
+      if (tipo_entidad_asociada !== "Admin")
+        return next(
+          new ErrorResponse("Debe proveer 'Admin' como entidad asociada.", 400)
+        );
 
-      if (tipo_entidad_asociada === "Admin") {
-        admin = await Admin.findOne({ cedula });
+      const admin: any = await Admin.findOne({ cedula }).session(session);
 
-        if (!admin)
-          return notFound({
-            message:
-              "No se encontró ningún administrador con la cédula provista.",
-            next,
-          });
-
-        const usuarioRegistrado = await Usuario.findOne({
-          entidad_asociada: admin._id,
+      if (!admin)
+        return notFound({
+          message:
+            "No se encontró ningún administrador con la cédula provista.",
+          next,
         });
 
-        if (usuarioRegistrado) {
-          return next(
-            new ErrorResponse(
-              "Usted ya posee una cuenta de administrador.",
-              400
-            )
-          );
-        }
+      const usuarioRegistrado = await Usuario.findOne({
+        entidad_asociada: admin._id,
+      }).session(session);
+
+      if (usuarioRegistrado) {
+        return next(
+          new ErrorResponse("Usted ya posee una cuenta de administrador.", 400)
+        );
       }
 
-      const perfilFound = await Perfil.findOne({ rol: perfil });
+      const perfilFound = await Perfil.findOne({ rol: perfil }).session(
+        session
+      );
 
       if (!perfilFound)
         return notFound({ message: "El perfil provisto es inválido.", next });
 
-      const newUser: any = await Usuario.create({
+      const userToCreate = {
         email,
         contrasenia,
         tipo_entidad_asociada,
-        entidad_asociada: (admin._id as Types.ObjectId) || undefined,
-        perfil: perfilFound._id,
-      });
+        entidad_asociada: admin._id as Types.ObjectId,
+        perfil: perfilFound._id as Types.ObjectId,
+      };
 
-      if (admin) {
-        admin.usuario = newUser._id;
-        await admin.save();
-      }
+      const newUser: any = await Usuario.create([userToCreate], { session });
+
+      admin.usuario = newUser[0]._id;
+      await admin.save();
 
       await session.commitTransaction();
       session.endSession();
 
-      sendTokenResponse(newUser, 201, res, "sign up", admin);
+      sendTokenResponse(newUser[0], 201, res, "sign up", admin);
     } catch (error) {
       await session.abortTransaction();
       session.endSession();
@@ -124,13 +124,21 @@ export const signin = asyncHandler(
 
     if (!user) return validateUserCredentials(req, next, true);
 
+    const admin = await Admin.findById(user.entidad_asociada);
+    if (!admin) {
+      return next(
+        new ErrorResponse(
+          "Sólo los administradores pueden iniciar sesión.",
+          401
+        )
+      );
+    }
+
     const isPasswordRight: boolean = await (user as any).matchPassword(
       contrasenia
     );
 
     if (!isPasswordRight) return validateUserCredentials(req, next, true);
-
-    const admin = await Admin.findById(user.entidad_asociada);
 
     sendTokenResponse(user, 200, res, "sign in", admin);
   }
@@ -226,17 +234,27 @@ export const forgotPassword = asyncHandler(
 // @access   Private --> Only admins
 export const deleteUsuario = asyncHandler(
   async (req: Request, res: Response, next: NextFunction): Promise<any> => {
-    const { _id } = req.params;
+    const session: ClientSession = await startSession();
 
-    const user = await Usuario.findById(_id);
+    try {
+      const { _id } = req.params;
 
-    if (!user) return notFound({ entity: "Usuario", next });
+      const user = await Usuario.findById(_id).session(session);
 
-    await Usuario.deleteOne(user);
+      if (!user) return notFound({ entity: "Usuario", next });
 
-    res.status(200).json({
-      exito: true,
-      mensaje: "¡Usuario eliminado satisfactoriamente!",
-    });
+      await Usuario.deleteOne(user, { session });
+
+      await session.commitTransaction();
+
+      res.status(200).json({
+        exito: true,
+        mensaje: "¡Usuario eliminado satisfactoriamente!",
+      });
+    } catch (error) {
+      await session.abortTransaction();
+    } finally {
+      session.endSession();
+    }
   }
 );

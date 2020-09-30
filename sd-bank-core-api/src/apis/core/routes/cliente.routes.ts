@@ -17,7 +17,7 @@ clienteRouter
 clienteRouter
   .route("/:_id")
   .get(/*loggerMiddleware,  */ getClienteById)
-  .post(/*loggerMiddleware,  */updateCliente)
+  .put(/*loggerMiddleware,  */updateCliente)
   .delete(/*loggerMiddleware,  */deleteCliente);
 
 export default clienteRouter;

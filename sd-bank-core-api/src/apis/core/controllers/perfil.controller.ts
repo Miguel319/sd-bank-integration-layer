@@ -6,6 +6,7 @@ import { errorHandler } from "../../../shared/middlewares/error.middleware";
 import { ClientSession, startSession } from "mongoose";
 import Usuario from "../../../shared/models/Usuario";
 import ErrorResponse from "../../../shared/utils/error-response";
+import { Types } from "mongoose";
 
 // @desc   Create perfil
 // @route  POST /api/v1/perfiles
@@ -23,7 +24,7 @@ export const createPerfil = asyncHandler(
         descripcion,
       };
 
-      await Perfil.create(perfilACrear);
+      await Perfil.create([perfilACrear], { session });
 
       await session.commitTransaction();
       session.endSession();
@@ -79,13 +80,16 @@ export const updatePerfil = asyncHandler(
       const { _id } = req.params;
       const { descripcion, rol } = req.body;
 
-      const perfilEncontrado = await Perfil.findById(_id);
+      const perfilEncontrado: any = await Perfil.findById(_id).session(session);
 
       if (!perfilEncontrado) return notFound({ entity: "Perfil", next });
 
-      const perfilActualizado = { descripcion, rol };
+      const perfilActualizado = {
+        descripcion: descripcion || perfilEncontrado.descripcion,
+        rol: rol || perfilEncontrado.rol,
+      };
 
-      await Perfil.updateOne(perfilEncontrado, perfilActualizado);
+      await Perfil.updateOne(perfilEncontrado, perfilActualizado, { session });
 
       await session.commitTransaction();
       session.endSession();
@@ -114,23 +118,23 @@ export const deletePerfil = asyncHandler(
     try {
       const { _id } = req.params;
 
-      const perfilEncontrado = await Perfil.findById(_id);
+      const perfilEncontrado = await Perfil.findById(_id).session(session);
 
       if (!perfilEncontrado) return notFound({ entity: "Perfil", next });
 
-      const usuarioAsociado: any = Usuario.findOne({
+      const usuariosAsociados: any = await Usuario.find({
         perfil: perfilEncontrado._id,
-      });
+      }).session(session);
 
-      if (usuarioAsociado)
+      if (usuariosAsociados.length > 0)
         return next(
           new ErrorResponse(
-            "No puede eliminar este perfil debido a que está asociado a un usuario.",
+            "No puede eliminar este perfil porque tiene usuarios asociados.",
             400
           )
         );
 
-      await Perfil.deleteOne(perfilEncontrado);
+      await Perfil.deleteOne(perfilEncontrado, { session });
 
       await session.commitTransaction();
       session.endSession();

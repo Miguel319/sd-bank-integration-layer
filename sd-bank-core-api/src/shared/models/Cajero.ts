@@ -26,6 +26,10 @@ const CajeroSchema = new Schema(
       type: ObjectId,
       ref: "Sucursal",
     },
+    usuario: {
+      type: ObjectId,
+      ref: "Usuario",
+    },
     resetcontraseniaToken: String,
     resetcontraseniaExpire: Date,
   },

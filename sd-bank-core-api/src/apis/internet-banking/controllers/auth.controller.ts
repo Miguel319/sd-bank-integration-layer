@@ -44,29 +44,33 @@ export const signup = asyncHandler(
           )
         );
 
-      let cliente: any = undefined;
+      if (tipo_entidad_asociada !== "Cliente")
+        return next(
+          new ErrorResponse(
+            "El tipo de entidad asociada debe ser 'Cliente'.",
+            400
+          )
+        );
 
-      if (tipo_entidad_asociada === "Cliente") {
-        cliente = await Cliente.findOne({ cedula });
+      const cliente: any = await Cliente.findOne({ cedula });
 
-        if (!cliente)
-          return notFound({
-            message: "No se encontró ningún cliente con la cédula provista.",
-            next,
-          });
-
-        const usuarioRegistrado = await Usuario.findOne({
-          entidad_asociada: cliente._id,
+      if (!cliente)
+        return notFound({
+          message: "No se encontró ningún cliente con la cédula provista.",
+          next,
         });
 
-        if (usuarioRegistrado) {
-          return next(
-            new ErrorResponse(
-              "Usted ya posee una cuenta de Internet Banking.",
-              400
-            )
-          );
-        }
+      const usuarioRegistrado = await Usuario.findOne({
+        entidad_asociada: cliente._id,
+      });
+
+      if (usuarioRegistrado) {
+        return next(
+          new ErrorResponse(
+            "Usted ya posee una cuenta de Internet Banking.",
+            400
+          )
+        );
       }
 
       const perfilFound = await Perfil.findOne({ rol: perfil });
@@ -78,14 +82,12 @@ export const signup = asyncHandler(
         email,
         contrasenia,
         tipo_entidad_asociada,
-        entidad_asociada: (cliente._id as Types.ObjectId) || undefined,
-        perfil: perfilFound._id,
+        entidad_asociada: cliente._id,
+        perfil: perfilFound._id as Types.ObjectId,
       });
 
-      if (cliente) {
-        cliente.usuario = newUser._id;
-        await cliente.save();
-      }
+      cliente.usuario = newUser._id;
+      await cliente.save();
 
       await session.commitTransaction();
       session.endSession();
@@ -133,9 +135,15 @@ export const signin = asyncHandler(
 
       if (!user) return validateUserCredentials(req, next, true);
 
-      console.log("user", user);
-
       const cliente = await Cliente.findById(user.entidad_asociada);
+
+      if (!cliente)
+        return next(
+          new ErrorResponse(
+            "No se encontró ningún cliente asociado a este usuario.",
+            400
+          )
+        );
 
       const isPasswordRight: boolean = await (user as any).matchPassword(
         contrasenia

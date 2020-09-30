@@ -81,23 +81,36 @@ export const updateCuenta = asyncHandler(
     res: Response,
     next: NextFunction
   ): Promise<void | Response> => {
-    const { _id } = req.params;
+    const session: ClientSession = await startSession();
+    session.startTransaction();
 
-    const cuenta = await Cuenta.findById(_id);
+    try {
+      const { _id } = req.params;
 
-    if (!cuenta) return notFound({ entity: "Cuenta", next });
+      const cuenta = await Cuenta.findById(_id);
 
-    const fieldsToUpdt: Object = getCuentaFieldsToUpdt(req);
+      if (!cuenta) return notFound({ entity: "Cuenta", next });
 
-    if (!fieldsToUpdt)
-      return next(
-        new ErrorResponse("Debe proveer al menos un campo a actualizar.", 400)
-      );
+      const fieldsToUpdt: Object = getCuentaFieldsToUpdt(req);
 
-    res.status(201).json({
-      exito: true,
-      mensaje: "¡Cuenta actualizada satisfactoriamente!",
-    });
+      if (!fieldsToUpdt)
+        return next(
+          new ErrorResponse("Debe proveer al menos un campo a actualizar.", 400)
+        );
+
+      await session.commitTransaction();
+      session.endSession();
+
+      res.status(201).json({
+        exito: true,
+        mensaje: "¡Cuenta actualizada satisfactoriamente!",
+      });
+    } catch (error) {
+      await session.abortTransaction();
+      session.endSession();
+
+      return errorHandler(error, req, res, next);
+    }
   }
 );
 

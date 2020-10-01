@@ -4,6 +4,8 @@ import { NextFunction, Response, Request } from "express";
 import { errorHandler } from "../../../shared/middlewares/error.middleware";
 import { ClientSession, startSession } from "mongoose";
 import { notFound } from "../../../shared/utils/err.helpers";
+import Transaccion from "../../../shared/models/Transaccion";
+import ErrorResponse from "../../../shared/utils/error-response";
 
 // @desc   GET tipos de transacción
 // @route  GET /core-api/v1/tipo-de-transaccion
@@ -23,9 +25,15 @@ export const getTipoDeTransaccionById = asyncHandler(
   async (req: Request, res: Response, next: NextFunction) => {
     const { _id } = req.params;
 
-    const prestamo = await TipoDeTransaccion.findById(_id);
+    const tipoDeTransaccion = await TipoDeTransaccion.findById(_id);
 
-    res.status(200).json(prestamo);
+    if (!tipoDeTransaccion)
+      return notFound({
+        message: "No se halló ningún tipo de transacción con el _id provisto.",
+        next,
+      });
+
+    res.status(200).json(tipoDeTransaccion);
   }
 );
 
@@ -34,12 +42,12 @@ export const getTipoDeTransaccionById = asyncHandler(
 // @access Private
 export const createTipoDeTransaccion = asyncHandler(
   async (req: Request, res: Response, next: NextFunction) => {
-    const { tipo } = req.body;
-
     const session: ClientSession = await startSession();
 
     try {
       session.startTransaction();
+
+      const { tipo } = req.body;
 
       await TipoDeTransaccion.create([{ tipo }], { session });
 
@@ -69,7 +77,9 @@ export const updateTipoDeTransaccion = asyncHandler(
     try {
       session.startTransaction();
 
-      const tipoDeTransaccionFound = await TipoDeTransaccion.findById(_id);
+      const tipoDeTransaccionFound = await TipoDeTransaccion.findById(
+        _id
+      ).session(session);
 
       if (!tipoDeTransaccionFound)
         return notFound({
@@ -108,10 +118,32 @@ export const deleteTipoDeTransaccion = asyncHandler(
     try {
       session.startTransaction();
 
-      await TipoDeTransaccion.findOneAndDelete([{ _id }], { session });
+      const tipoDeTransaccion = await TipoDeTransaccion.findById(_id).session(
+        session
+      );
+
+      if (!tipoDeTransaccion)
+        return notFound({
+          message:
+            "No se halló ningún tipo de transacción con el _id provisto.",
+          next,
+        });
+
+      const transaccionesAsociadas = await Transaccion.find({
+        tipo_de_transaccion: tipoDeTransaccion._id,
+      });
+
+      if (transaccionesAsociadas.length > 0)
+        return next(
+          new ErrorResponse(
+            "No puede eliminar este tipo de transacción porque tiene transacciones asociadas.",
+            400
+          )
+        );
+
+      await TipoDeTransaccion.deleteOne(tipoDeTransaccion, { session });
 
       await session.commitTransaction();
-      session.endSession();
 
       res.status(200).json({
         exito: true,
@@ -119,9 +151,10 @@ export const deleteTipoDeTransaccion = asyncHandler(
       });
     } catch (error) {
       await session.abortTransaction();
-      session.endSession();
 
       return errorHandler(error, req, res, next);
+    } finally {
+      session.endSession();
     }
   }
 );

@@ -10,6 +10,10 @@ import {
 } from "../utils/prestamo.helpers";
 import ErrorResponse from "../../../shared/utils/error-response";
 import { errorHandler } from "../../../shared/middlewares/error.middleware";
+import Cajero from "../../../shared/models/Cajero";
+import Cuadre from "../../../shared/models/Cuadre";
+import { getPrestamoOp } from "../utils/cajero.helpers";
+import OperacionCajero from "../../../shared/models/OperacionCajero";
 
 export const getPretamosByClienteId = asyncHandler(
   async (
@@ -40,9 +44,39 @@ export const processPrestamoPago = asyncHandler(
       session.startTransaction();
 
       const { _id } = req.params;
-      const { monto, cedula } = req.body;
+      const { cajero_id, cuadre_id, cedula } = req.query;
+      const { monto } = req.body;
 
-      // Aquí no se comprueba si la cédula es válida porque ya hay un middleware que lo valida.
+      const montoADepositar: number = Number(monto);
+
+      if (!montoADepositar || montoADepositar < 0)
+        return next(
+          new ErrorResponse(
+            "El monto debe ser un valor numérico positivo.",
+            400
+          )
+        );
+
+      const cajeroAsociado: any = await Cajero.findById(cajero_id).session(
+        session
+      );
+
+      if (!cajeroAsociado)
+        return notFound({
+          message: "No se halló ningún cajero con el _id provisto.",
+          next,
+        });
+
+      const cuadreAsociado: any = await Cuadre.findById(cuadre_id).session(
+        session
+      );
+
+      if (!cuadreAsociado)
+        return notFound({
+          message: "No se halló ningún cuadre con el _id provisto.",
+          next,
+        });
+
       const cliente: any = await Cliente.findOne({ cedula }).session(session);
 
       if (!cliente)
@@ -52,7 +86,9 @@ export const processPrestamoPago = asyncHandler(
         });
 
       const prestamoPerteneceACliente = Boolean(
-        cliente.prestamos.find((prestamoId: any) => String(prestamoId) === String(_id))
+        cliente.prestamos.find(
+          (prestamoId: any) => String(prestamoId) === String(_id)
+        )
       );
 
       if (!prestamoPerteneceACliente)
@@ -67,12 +103,31 @@ export const processPrestamoPago = asyncHandler(
 
       const montoNumber: number = Number(monto);
 
-      if (prestamo.cantidad_saldada === prestamo.cantidad_total) {
-        await Prestamo.deleteOne([prestamo], { session });
+      const operacionCajeroObj: any = getPrestamoOp(
+        cajeroAsociado,
+        montoADepositar,
+        cuadreAsociado,
+        cliente
+      );
 
-        const idxToDeletePrestamoFrom = cliente.prestamos.indexOf(_id);
+      if (prestamo.cantidad_saldada === prestamo.cantidad_total) {
+        await Prestamo.deleteOne(prestamo, { session });
+
+        const idxToDeletePrestamoFrom = cliente.prestamos.indexOf(prestamo._id);
 
         cliente.prestamos.splice(idxToDeletePrestamoFrom, 1);
+
+        const operacionRealizada: any = await OperacionCajero.create(
+          [operacionCajeroObj],
+          { session }
+        );
+
+        cuadreAsociado.operaciones.push(operacionRealizada[0]._id);
+        cuadreAsociado.monto_depositado -= montoADepositar;
+        cuadreAsociado.balance_final -= montoADepositar;
+        cuadreAsociado.clientes_atendidos += 1;
+
+        await cuadreAsociado.save();
 
         await cliente.save();
 
@@ -81,6 +136,16 @@ export const processPrestamoPago = asyncHandler(
           mensaje: "El préstamo fue saldado por completo.",
         });
       }
+
+      const operacionRealizada: any = await OperacionCajero.create(
+        [operacionCajeroObj],
+        { session }
+      );
+
+      cuadreAsociado.operaciones.push(operacionRealizada[0]._id);
+      cuadreAsociado.monto_depositado -= montoADepositar;
+      cuadreAsociado.balance_final -= montoADepositar;
+      cuadreAsociado.clientes_atendidos += 1;
 
       const balanceExcedido = validarMontoPrestamo(montoNumber, prestamo);
 
@@ -91,7 +156,6 @@ export const processPrestamoPago = asyncHandler(
       await prestamo.save();
 
       await session.commitTransaction();
-      session.endSession();
 
       res.status(200).json({
         exito: true,
@@ -99,9 +163,10 @@ export const processPrestamoPago = asyncHandler(
       });
     } catch (error) {
       await session.abortTransaction();
-      session.endSession();
 
       return errorHandler(error, req, res, next);
+    } finally {
+      session.endSession();
     }
   }
 );

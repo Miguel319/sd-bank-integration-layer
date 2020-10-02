@@ -24,3 +24,22 @@ export const validateCashierCredentials = (
       )
     );
 };
+
+export const getPrestamoOp = (
+  cajeroAsociado: any,
+  montoADepositar: number,
+  cuadreAsociado: any,
+  cliente: any
+) => {
+  return {
+    cajero: cajeroAsociado._id,
+    descripcion: `El cajero ${cajeroAsociado.nombre} ${
+      cajeroAsociado.apellido
+    } procesó un pago de préstamo de RD$${montoADepositar.toLocaleString()} del cliente ${
+      cliente.nombre
+    } ${cliente.apellido}.`,
+    tipo: "Pago de prestamo",
+    monto: montoADepositar,
+    cuadre: cuadreAsociado._id,
+  };
+};

@@ -1,5 +1,6 @@
 import { Request } from "express";
 import { Types } from "mongoose";
+import TipoDeTransaccion from "../../../shared/models/TipoDeTransaccion";
 
 export const validarReqRetiro = (req: Request): string => {
   const { numero_de_cuenta } = req.params;
@@ -62,17 +63,22 @@ export const checkBalanceRetiro = (
     : "";
 };
 
-export const getTransaccionDeposito = (
+export const getTransaccionACrear = (
   cuentaEncontrada: any,
-  monto: number
+  monto: number,
+  tipoTrans: any,
+  retiro: boolean = false
 ) => {
-  const tipoTrans: any = "5f5e85c4ded5e45e40346f98";
+  const descripcion = retiro
+    ? `Se retiraron RD$${monto.toLocaleString()} de la cuenta.`
+    : `Se depositaron RD$${monto.toLocaleString()} en la cuenta.`;
 
   const transaccionACrear = {
-    cuenta: cuentaEncontrada._id,
+    entidad_asociada: cuentaEncontrada._id,
     cantidad: monto,
-    descripcion: `Se depositaron RD$${monto.toLocaleString()} en la cuenta.`,
-    tipo: tipoTrans as Types.ObjectId,
+    tipo_entidad_asociada: "Cuenta",
+    descripcion,
+    tipo: tipoTrans._id,
   };
 
   return transaccionACrear;

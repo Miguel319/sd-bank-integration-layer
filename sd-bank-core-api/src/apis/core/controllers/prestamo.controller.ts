@@ -1,9 +1,11 @@
+import { errorHandler } from "./../../../shared/middlewares/error.middleware";
 import { Response, Request, NextFunction } from "express";
 import { asyncHandler } from "../../../shared/middlewares/async.middleware";
 import Prestamo from "../../../shared/models/Prestamo";
 import Cliente from "../../../shared/models/Cliente";
 import { notFound } from "../../../shared/utils/err.helpers";
 import ErrorResponse from "../../../shared/utils/error-response";
+import { ClientSession, startSession } from "mongoose";
 
 // @desc   GET prestamos
 // @route  POST /api/v1/prestamos
@@ -51,30 +53,48 @@ export const getAllPrestamosByUser = asyncHandler(
 // @access Private
 export const createPrestamo = asyncHandler(
   async (req: Request, res: Response, next: NextFunction) => {
-    const { descripcion, cantidad_total, cliente_id } = req.body;
+    const session: ClientSession = await startSession();
 
-    const newPrestamo = {
-      descripcion,
-      cantidad_total,
-      remaining: Number(cantidad_total),
-      cliente: cliente_id,
-      cantidad_restante: cantidad_total,
-    };
+    try {
+      session.startTransaction();
 
-    const clientFound: any = await Cliente.findById(cliente_id);
+      const { descripcion, cantidad_total, cliente_id } = req.body;
 
-    if (!clientFound) return notFound({ entity: "Cliente", next });
+      const newPrestamo = {
+        descripcion,
+        cantidad_total,
+        remaining: Number(cantidad_total),
+        cliente: cliente_id,
+        cantidad_restante: Number(cantidad_total),
+      };
 
-    const prestamo = await Prestamo.create(newPrestamo);
+      const clientFound: any = await Cliente.findById(cliente_id).session(
+        session
+      );
 
-    clientFound.prestamos.push((prestamo as any).id);
+      if (!clientFound) return notFound({ entity: "Cliente", next });
 
-    await clientFound.save();
+      const prestamoCreado: any = await Prestamo.create([newPrestamo], {
+        session,
+      });
 
-    res.status(201).json({
-      exito: true,
-      mensaje: "Préstamo solicitado y aprobado exitosamente.",
-    });
+      clientFound.prestamos.push(prestamoCreado[0]._id);
+
+      await clientFound.save();
+
+      await session.commitTransaction();
+
+      res.status(201).json({
+        exito: true,
+        mensaje: "Préstamo solicitado y aprobado exitosamente.",
+      });
+    } catch (error) {
+      await session.abortTransaction();
+
+      return errorHandler(error, req, res, next);
+    } finally {
+      session.endSession();
+    }
   }
 );
 
@@ -83,23 +103,48 @@ export const createPrestamo = asyncHandler(
 // @access Private
 export const updatePrestamo = asyncHandler(
   async (req: Request, res: Response, next: NextFunction): Promise<any> => {
-    const { _id } = req.params;
-    const { descripcion } = req.params;
+    const session: ClientSession = await startSession();
 
-    if (!descripcion)
-      return next(
-        new ErrorResponse("Debe proveer una descripción para el préstamo.", 400)
-      );
+    try {
+      session.startTransaction();
 
-    const prestamo = await Prestamo.findById(_id);
+      const { _id } = req.params;
+      const { descripcion } = req.params;
 
-    if (!prestamo) return notFound({ entity: "Préstamo", next });
+      if (!descripcion)
+        return next(
+          new ErrorResponse(
+            "Debe proveer una descripción para el préstamo.",
+            400
+          )
+        );
 
-    await Prestamo.updateOne(prestamo, { descripcion });
+      const prestamo: any = await Prestamo.findById(_id).session(session);
 
-    res.status(200).json({
-      exito: true,
-      mensaje: "¡Préstamo actualizado satisfactoriamente!",
-    });
+      if (!prestamo) return notFound({ entity: "Préstamo", next });
+
+      const prestamoActualizado = {
+        cantidad_saldada: prestamo.cantidad_saldada,
+        cantidad_total: prestamo.cantidad_total,
+        cantidad_restante: prestamo.cantidad_restante,
+        descripcion,
+        aprobado: prestamo.aprobado,
+      };
+
+      await Prestamo.updateOne(prestamo, prestamoActualizado, { session });
+
+      await session.commitTransaction();
+
+      res.status(200).json({
+        exito: true,
+        mensaje: "¡Préstamo actualizado satisfactoriamente!",
+      });
+    } catch (error) {
+      await session.abortTransaction();
+
+      return errorHandler(error, req, res, next);
+    } finally {
+      session.endSession();
+    }
   }
 );

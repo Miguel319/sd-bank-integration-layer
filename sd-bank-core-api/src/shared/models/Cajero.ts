@@ -1,7 +1,4 @@
 import mongoose, { Schema } from "mongoose";
-import crypto from "crypto";
-import bcrypt from "bcrypt";
-import jwt from "jsonwebtoken";
 
 const { ObjectId } = Schema.Types;
 
@@ -30,6 +27,12 @@ const CajeroSchema = new Schema(
       type: ObjectId,
       ref: "Usuario",
     },
+    cuadres: [
+      {
+        type: ObjectId,
+        ref: "Cuadre",
+      },
+    ],
     resetcontraseniaToken: String,
     resetcontraseniaExpire: Date,
   },
@@ -37,41 +40,5 @@ const CajeroSchema = new Schema(
     timestamps: true, // created_at, updated_at
   }
 );
-
-// Encrypt password using bcryt
-CajeroSchema.pre("save", async function (next: any) {
-  const thisRef: any = this;
-
-  if (!thisRef.isModified("contrasenia")) next();
-
-  const salt: any = await bcrypt.genSalt(10);
-  thisRef.contrasenia = await bcrypt.hash(thisRef.contrasenia, salt);
-});
-
-CajeroSchema.methods.getSignedJwtToken = function () {
-  return jwt.sign({ id: this._id }, (process as any).env.JWT_SECRET);
-};
-
-//Match cashier entered password to hashed password in db
-CajeroSchema.methods.matchPassword = async function (enteredPassword: string) {
-  return await bcrypt.compare(enteredPassword, this.contrasenia);
-};
-
-// Generate and hash password token
-CajeroSchema.methods.getResetPasswordToken = async function () {
-  // Generate token
-  const resetToken: string = crypto.randomBytes(20).toString("hex");
-
-  // Hash token and set to resetcontrasenia field
-  this.resetcontraseniaToken = crypto
-    .createHash("sha256")
-    .update(resetToken)
-    .digest("hex");
-
-  // Set expire
-  this.resetcontraseniaExpire = Date.now() + 10 * 60 * 1000;
-
-  return resetToken;
-};
 
 export default mongoose.model("Cajero", CajeroSchema);

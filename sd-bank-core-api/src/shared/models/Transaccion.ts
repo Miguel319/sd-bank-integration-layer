@@ -4,13 +4,17 @@ const { ObjectId } = Schema.Types;
 
 const TransaccionSchema = new Schema(
   {
-    cuenta: {
-      type: ObjectId,
-      ref: "Cuenta",
+    tipo_entidad_asociada: {
+      type: String,
       required: [
         true,
-        "Debe especificar la cuenta asociada a esta transacción.",
+        "Debe especificar el tipo de la entidad asociada ('tipo_entidad_asociada'): Cuenta o Prestamo.",
       ],
+      enum: ["Cuenta", "Prestamo"],
+    },
+    entidad_asociada: {
+      type: ObjectId,
+      refPath: "tipo_entidad_asociada",
     },
     descripcion: String,
     cantidad: {

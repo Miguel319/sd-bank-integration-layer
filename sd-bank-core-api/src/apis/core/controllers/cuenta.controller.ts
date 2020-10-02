@@ -99,7 +99,6 @@ export const updateCuenta = asyncHandler(
         );
 
       await session.commitTransaction();
-      session.endSession();
 
       res.status(201).json({
         exito: true,
@@ -107,9 +106,10 @@ export const updateCuenta = asyncHandler(
       });
     } catch (error) {
       await session.abortTransaction();
-      session.endSession();
 
       return errorHandler(error, req, res, next);
+    } finally {
+      session.endSession();
     }
   }
 );
@@ -148,7 +148,6 @@ export const deleteCuenta = asyncHandler(
       await Cuenta.deleteOne(cuenta);
 
       await session.commitTransaction();
-      session.endSession();
 
       res.status(200).json({
         exito: true,
@@ -156,9 +155,10 @@ export const deleteCuenta = asyncHandler(
       });
     } catch (error) {
       await session.abortTransaction();
-      session.endSession();
 
       return errorHandler(error, req, res, next);
+    } finally {
+      session.endSession();
     }
   }
 );

@@ -24,10 +24,12 @@ const Cuadre = new Schema(
       type: Number,
       default: 0,
     },
-    clientes_atendidos: {
-      type: Number,
-      default: 0,
-    },
+    clientes_atendidos: [
+      {
+        type: ObjectId,
+        ref: "Cliente",
+      },
+    ],
     operaciones: [
       {
         type: ObjectId,

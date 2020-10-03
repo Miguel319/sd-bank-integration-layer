@@ -35,7 +35,7 @@ export const processCuentaRetiro = asyncHandler(
     const session: ClientSession = await startSession();
 
     const { numero_de_cuenta } = req.params;
-    const { cajero_id, cuadre_id } = req.query;
+    const { cajero_id, cuadre_id, cedula } = req.query;
     const { monto } = req.body;
 
     try {
@@ -72,6 +72,14 @@ export const processCuentaRetiro = asyncHandler(
       if (!cuadreAsociado)
         return notFound({
           message: "No se halló ningún cuadre con el _id provisto.",
+          next,
+        });
+
+      const cliente: any = await Cliente.findOne({ cedula }).session(session);
+
+      if (!cliente)
+        return notFound({
+          message: "No se halló ningún cliente con la cédula provista.",
           next,
         });
 
@@ -132,9 +140,17 @@ export const processCuentaRetiro = asyncHandler(
       );
 
       cuadreAsociado.operaciones.push(operacionRealizada[0]._id);
-      cuadreAsociado.monto_depositado -= montoARetirar;
+      cuadreAsociado.monto_retirado += montoARetirar;
       cuadreAsociado.balance_final -= montoARetirar;
-      cuadreAsociado.clientes_atendidos += 1;
+
+      const clientesAtendidos: any = Boolean(
+        cuadreAsociado.clientes_atendidos.find(
+          (el: any) => String(el) === String(cliente._id)
+        )
+      );
+
+      if (!clientesAtendidos)
+        cuadreAsociado.clientes_atendidos.push(cliente._id);
 
       await cuadreAsociado.save();
 
@@ -179,7 +195,7 @@ export const getCuentasFromClienteCedula = asyncHandler(
 export const processCuentaDeposito = asyncHandler(
   async (req: Request, res: Response, next: NextFunction): Promise<any> => {
     const { numero_de_cuenta } = req.params;
-    const { cajero_id, cuadre_id } = req.query;
+    const { cajero_id, cuadre_id, cedula } = req.query;
     const { monto } = req.body;
 
     const session: ClientSession = await startSession();
@@ -209,6 +225,14 @@ export const processCuentaDeposito = asyncHandler(
       if (!cuadreAsociado)
         return notFound({
           message: "No se halló ningún cuadre con el _id provisto.",
+          next,
+        });
+
+      const cliente = await Cliente.findOne({ cedula });
+
+      if (!cliente)
+        return notFound({
+          message: "No se halló ningún cliente con la cédula provista.",
           next,
         });
 
@@ -266,7 +290,15 @@ export const processCuentaDeposito = asyncHandler(
       cuadreAsociado.operaciones.push(operacionRealizada[0]._id);
       cuadreAsociado.monto_depositado += montoADepositar;
       cuadreAsociado.balance_final += montoADepositar;
-      cuadreAsociado.clientes_atendidos += 1;
+
+      const clientesAtendidos: any = Boolean(
+        cuadreAsociado.clientes_atendidos.find(
+          (el: any) => String(el) === String(cliente._id)
+        )
+      );
+
+      if (!clientesAtendidos)
+        cuadreAsociado.clientes_atendidos.push(cliente._id);
 
       await cuadreAsociado.save();
 

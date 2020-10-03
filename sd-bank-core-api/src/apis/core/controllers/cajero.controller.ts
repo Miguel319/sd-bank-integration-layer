@@ -13,6 +13,9 @@ import Usuario from "../../../shared/models/Usuario";
 import Perfil from "../../../shared/models/Perfil";
 import Sucursal from "../../../shared/models/Sucursal";
 import { Types } from "mongoose";
+import Cuadre from "../../../shared/models/Cuadre";
+import OperacionCajero from "../../../shared/models/OperacionCajero";
+import Transaccion from "../../../shared/models/Transaccion";
 
 // @desc     a new cashier
 // @route    POST
@@ -208,7 +211,7 @@ export const deleteCajero = asyncHandler(
       session.startTransaction();
       const { _id } = req.params;
 
-      const cajero: any = await Cajero.findById(_id);
+      const cajero: any = await Cajero.findById(_id).session(session);
 
       if (!cajero) {
         return notFound({
@@ -217,7 +220,18 @@ export const deleteCajero = asyncHandler(
         });
       }
 
-      const sucursalAsociada: any = await Sucursal.findById(cajero.sucursal);
+      if (cajero.cuadres.length > 0) {
+        return next(
+          new ErrorResponse(
+            "No puede eliminar a este cajero porque tiene cuadres/operaciones asociadas.",
+            401
+          )
+        );
+      }
+
+      const sucursalAsociada: any = await Sucursal.findById(
+        cajero.sucursal
+      ).session(session);
 
       const idxToDelete = sucursalAsociada.cajeros.indexOf(cajero._id);
 
@@ -231,7 +245,6 @@ export const deleteCajero = asyncHandler(
       await Cajero.deleteOne({ _id: cajero._id }, { session });
 
       await session.commitTransaction();
-      session.endSession();
 
       res.status(200).json({
         exito: true,
@@ -239,9 +252,10 @@ export const deleteCajero = asyncHandler(
       });
     } catch (error) {
       await session.abortTransaction();
-      session.endSession();
 
       return errorHandler(error, req, res, next);
+    } finally {
+      session.endSession();
     }
   }
 );

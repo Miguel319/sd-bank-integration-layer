@@ -6,6 +6,7 @@ import { notFound } from "../../../shared/utils/err.helpers";
 import { ClientSession, startSession } from "mongoose";
 import { errorHandler } from "../../../shared/middlewares/error.middleware";
 import ErrorResponse from "../../../shared/utils/error-response";
+import OperacionCajero from "../../../shared/models/OperacionCajero";
 
 export const getAllCuadres = asyncHandler(
   async (req: Request, res: Response, next: NextFunction): Promise<any> => {
@@ -22,6 +23,16 @@ export const getCuadreById = asyncHandler(
     const cuadre = await Cuadre.findById(_id);
 
     res.status(200).json(cuadre);
+  }
+);
+
+export const getOperacionesFromCuadreId = asyncHandler(
+  async (req: Request, res: Response, next: NextFunction): Promise<any> => {
+    const { _id } = req.params;
+
+    const operaciones = await OperacionCajero.find({ cuadre: _id });
+
+    res.status(200).json(operaciones);
   }
 );
 
@@ -82,6 +93,7 @@ export const createCuadre = asyncHandler(
       res.status(200).json({
         exito: true,
         mensaje: "¡Cuadre creado satisfactoriamente!",
+        cuadre: cuadreCreado[0],
       });
     } catch (error) {
       // await session.abortTransaction();
@@ -92,4 +104,3 @@ export const createCuadre = asyncHandler(
     }
   }
 );
-

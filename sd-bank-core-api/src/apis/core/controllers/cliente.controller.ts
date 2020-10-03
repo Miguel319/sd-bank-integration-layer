@@ -79,7 +79,6 @@ export const createCliente = asyncHandler(
       await Cliente.create([clienteToCreate], { session });
 
       await session.commitTransaction();
-      session.endSession();
 
       res.status(201).json({
         exito: true,
@@ -87,9 +86,10 @@ export const createCliente = asyncHandler(
       });
     } catch (error) {
       await session.abortTransaction();
-      session.endSession();
 
       return errorHandler(error, req, res, next);
+    } finally {
+      session.endSession();
     }
   }
 );
@@ -119,7 +119,6 @@ export const updateCliente = asyncHandler(
       await Cliente.updateOne({ _id }, clienteToUpdt, { session });
 
       await session.commitTransaction();
-      session.endSession();
 
       res.status(200).json({
         exito: true,
@@ -127,9 +126,10 @@ export const updateCliente = asyncHandler(
       });
     } catch (error) {
       await session.abortTransaction();
-      session.endSession();
 
       return errorHandler(error, req, res, next);
+    } finally {
+      session.endSession();
     }
   }
 );
@@ -161,7 +161,7 @@ export const deleteCliente = asyncHandler(
       if (cliente.cuentas_bancarias.length > 0) {
         return next(
           new ErrorResponse(
-            "Este cliente tiene cuentas asociadas. Debe eliminar la cuenta antes de eliminar el cliente.",
+            "Este cliente tiene cuentas asociadas. Debe eliminar las cuentas antes de eliminar el cliente.",
             400
           )
         );
@@ -173,7 +173,6 @@ export const deleteCliente = asyncHandler(
       await Cliente.deleteOne({ _id: cliente._id }, { session });
 
       await session.commitTransaction();
-      session.endSession();
 
       res.status(200).json({
         exito: true,
@@ -181,9 +180,10 @@ export const deleteCliente = asyncHandler(
       });
     } catch (error) {
       await session.abortTransaction();
-      session.endSession();
 
       return errorHandler(error, req, res, next);
+    } finally {
+      session.endSession();
     }
   }
 );

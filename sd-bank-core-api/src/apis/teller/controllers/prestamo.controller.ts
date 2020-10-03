@@ -110,6 +110,15 @@ export const processPrestamoPago = asyncHandler(
         cliente
       );
 
+      const clientesAtendidos: any = Boolean(
+        cuadreAsociado.clientes_atendidos.find(
+          (el: any) => String(el) === String(cliente._id)
+        )
+      );
+
+      if (!clientesAtendidos)
+        cuadreAsociado.clientes_atendidos.push(cliente._id);
+
       if (prestamo.cantidad_saldada === prestamo.cantidad_total) {
         await Prestamo.deleteOne(prestamo, { session });
 
@@ -123,9 +132,8 @@ export const processPrestamoPago = asyncHandler(
         );
 
         cuadreAsociado.operaciones.push(operacionRealizada[0]._id);
-        cuadreAsociado.monto_depositado -= montoADepositar;
-        cuadreAsociado.balance_final -= montoADepositar;
-        cuadreAsociado.clientes_atendidos += 1;
+        cuadreAsociado.monto_depositado += montoADepositar;
+        cuadreAsociado.balance_final += montoADepositar;
 
         await cuadreAsociado.save();
 
@@ -143,15 +151,16 @@ export const processPrestamoPago = asyncHandler(
       );
 
       cuadreAsociado.operaciones.push(operacionRealizada[0]._id);
-      cuadreAsociado.monto_depositado -= montoADepositar;
-      cuadreAsociado.balance_final -= montoADepositar;
-      cuadreAsociado.clientes_atendidos += 1;
+      cuadreAsociado.monto_depositado += montoADepositar;
+      cuadreAsociado.balance_final += montoADepositar;
 
       const balanceExcedido = validarMontoPrestamo(montoNumber, prestamo);
 
       if (balanceExcedido) return next(new ErrorResponse(balanceExcedido, 400));
 
       realizarCalculosPrestamos(montoNumber, prestamo);
+
+      await cuadreAsociado.save();
 
       await prestamo.save();
 

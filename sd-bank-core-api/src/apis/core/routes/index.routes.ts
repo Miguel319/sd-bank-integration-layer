@@ -7,6 +7,7 @@ import tipoDeTransaccionRouter from "./tipo-de-transaccion.routes";
 import adminRouter from "./admin.routes";
 import sucursalRouter from "./sucursal.routes";
 import cajeroRouter from "./cajero.routes";
+import usuarioRouter from "./usuario.routes";
 
 export const setupCoreRoutes = (app: any): void => {
   const BASE_URL = "/core-api/v1";
@@ -20,4 +21,5 @@ export const setupCoreRoutes = (app: any): void => {
   app.use(`${BASE_URL}/tipo-de-transaccion`, tipoDeTransaccionRouter);
   app.use(`${BASE_URL}/sucursales`, sucursalRouter);
   app.use(`${BASE_URL}/cajeros`, cajeroRouter);
+  app.use(`${BASE_URL}/usuarios`, usuarioRouter);
 };

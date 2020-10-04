@@ -11,13 +11,13 @@ const clienteRouter: Router = Router();
 
 clienteRouter
   .route("")
-  .get(/*loggerMiddleware, */getAllClientes)
-  .post(/*loggerMiddleware,  */createCliente);
+  .get(/*loggerMiddleware, */ getAllClientes)
+  .post(/*loggerMiddleware,  */ createCliente);
 
 clienteRouter
   .route("/:_id")
   .get(/*loggerMiddleware,  */ getClienteById)
-  .put(/*loggerMiddleware,  */updateCliente)
-  .delete(/*loggerMiddleware,  */deleteCliente);
+  .put(/*loggerMiddleware,  */ updateCliente)
+  .delete(/*loggerMiddleware,  */ deleteCliente);
 
 export default clienteRouter;

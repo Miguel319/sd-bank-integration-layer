@@ -67,7 +67,11 @@ export const sendTokenResponse = (
     .json({
       exito: true,
       mensaje: `${
-        operacion === "sign up" ? "¡Cuenta creada" : "¡Sesión iniciada"
+        operacion === "sign up"
+          ? "¡Cuenta creada"
+          : operacion === "update"
+          ? "!Cuenta actualizada"
+          : "¡Sesión iniciada"
       } exitosamente!`,
       email: user.email,
       token,

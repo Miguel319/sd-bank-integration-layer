@@ -1,4 +1,4 @@
-import mongoose, { Schema } from "mongoose";
+import { Schema, model } from "mongoose";
 
 const PerfilSchema = new Schema(
   {
@@ -10,10 +10,15 @@ const PerfilSchema = new Schema(
       type: String,
       required: [true, "El campo descripción es obligatorio."],
     },
+    tipo_entidad_asociada: {
+      type: String,
+      enum: ["Cliente", "Admin", "Cajero"],
+      required: [true, "Debe especificar el tipo de entidad asociada."],
+    },
   },
   {
     timestamps: true, // created_at, updated_at
   }
 );
 
-export default mongoose.model("Perfil", PerfilSchema);
+export default model("Perfil", PerfilSchema);

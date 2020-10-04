@@ -6,7 +6,6 @@ import { errorHandler } from "../../../shared/middlewares/error.middleware";
 import { ClientSession, startSession } from "mongoose";
 import Usuario from "../../../shared/models/Usuario";
 import ErrorResponse from "../../../shared/utils/error-response";
-import { Types } from "mongoose";
 
 // @desc   Create perfil
 // @route  POST /api/v1/perfiles
@@ -17,17 +16,17 @@ export const createPerfil = asyncHandler(
 
     try {
       session.startTransaction();
-      const { rol, descripcion } = req.body;
+      const { rol, descripcion, tipo_entidad_asociada } = req.body;
 
       const perfilACrear = {
         rol,
         descripcion,
+        tipo_entidad_asociada,
       };
 
       await Perfil.create([perfilACrear], { session });
 
       await session.commitTransaction();
-      session.endSession();
 
       res.status(201).json({
         exito: true,
@@ -35,9 +34,10 @@ export const createPerfil = asyncHandler(
       });
     } catch (error) {
       await session.abortTransaction();
-      session.endSession();
 
       return errorHandler(error, req, res, next);
+    } finally {
+      session.endSession();
     }
   }
 );
@@ -87,12 +87,12 @@ export const updatePerfil = asyncHandler(
       const perfilActualizado = {
         descripcion: descripcion || perfilEncontrado.descripcion,
         rol: rol || perfilEncontrado.rol,
+        tipo_entidad_asociada: perfilEncontrado.tipo_entidad_asociada,
       };
 
       await Perfil.updateOne(perfilEncontrado, perfilActualizado, { session });
 
       await session.commitTransaction();
-      session.endSession();
 
       res.status(200).json({
         exito: true,
@@ -100,9 +100,10 @@ export const updatePerfil = asyncHandler(
       });
     } catch (error) {
       await session.abortTransaction();
-      session.endSession();
 
       return errorHandler(error, req, res, next);
+    } finally {
+      session.endSession();
     }
   }
 );
@@ -137,7 +138,6 @@ export const deletePerfil = asyncHandler(
       await Perfil.deleteOne(perfilEncontrado, { session });
 
       await session.commitTransaction();
-      session.endSession();
 
       res.status(200).json({
         exito: true,
@@ -145,9 +145,10 @@ export const deletePerfil = asyncHandler(
       });
     } catch (error) {
       await session.abortTransaction();
-      session.endSession();
 
       return errorHandler(error, req, res, next);
+    } finally {
+      session.endSession();
     }
   }
 );

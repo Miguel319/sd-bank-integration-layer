@@ -18,6 +18,7 @@ import {
 } from "../utils/cuenta.helpers";
 import ErrorResponse from "../../../shared/utils/error-response";
 import { notFound } from "../../../shared/utils/err.helpers";
+import TipoDeTransaccion from "../../../shared/models/TipoDeTransaccion";
 
 // @desc   Display the cuentas from a given usuario by searching for his/her id
 // @route  GET /api/v1/cuentas/usuario/:_id
@@ -481,3 +482,44 @@ export const interbankTransfer = asyncHandler(
     }
   }
 );
+
+export const getTipoTransaccionById = asyncHandler(
+  async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void | Response> => {
+    const { _id } = req.params;
+
+    const tipoDeTransaccion = await TipoDeTransaccion.findById(_id);
+
+    if (!tipoDeTransaccion)
+      return notFound({
+        message: "No se halló ningún tipo de transacción con el _id provisto.",
+        next,
+      });
+
+    res.status(200).json(tipoDeTransaccion);
+  }
+);
+
+export const getTransaccionById = asyncHandler(
+  async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void | Response> => {
+    const { _id } = req.params;
+
+    const transaccion = await Transaccion.findById(_id);
+
+    if (!transaccion)
+      return notFound({
+        entity: "No se halló ninguna transacción con el _id provisto.",
+        next,
+      });
+
+    res.status(200).json(transaccion);
+  }
+);
+``

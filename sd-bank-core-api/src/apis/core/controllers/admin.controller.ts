@@ -79,7 +79,6 @@ export const createAdmin = asyncHandler(
       await Admin.create([adminToCreate], { session });
 
       await session.commitTransaction();
-      session.endSession();
 
       res.status(201).json({
         exito: true,
@@ -88,6 +87,8 @@ export const createAdmin = asyncHandler(
     } catch (error) {
       await session.abortTransaction();
       return errorHandler(error, req, res, next);
+    } finally {
+      session.endSession();
     }
   }
 );
@@ -132,7 +133,6 @@ export const updateAdmin = asyncHandler(
       await Admin.updateOne(adminFound, updatedAdmin, { session });
 
       await session.commitTransaction();
-      session.endSession();
 
       res.status(200).json({
         exito: true,
@@ -140,9 +140,10 @@ export const updateAdmin = asyncHandler(
       });
     } catch (error) {
       await session.abortTransaction();
-      session.endSession();
 
       return errorHandler(error, req, res, next);
+    } finally {
+      session.endSession();
     }
   }
 );
@@ -169,7 +170,6 @@ export const deleteAdmin = asyncHandler(
       await Admin.deleteOne({ _id: admin._id }, { session });
 
       await session.commitTransaction();
-      session.endSession();
 
       res.status(200).json({
         exito: true,
@@ -177,9 +177,10 @@ export const deleteAdmin = asyncHandler(
       });
     } catch (error) {
       await session.abortTransaction();
-      session.endSession();
 
       return errorHandler(error, req, res, next);
+    } finally {
+      session.endSession();
     }
   }
 );

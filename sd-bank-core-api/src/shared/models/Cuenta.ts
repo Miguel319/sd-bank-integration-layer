@@ -8,10 +8,10 @@ const CuentaSchema = new Schema(
   {
     tipo_de_cuenta: {
       type: String,
-      enum: ["Cheques", "Ahorro"],
+      enum: ["Corriente", "Ahorro"],
       required: [
         true,
-        "Debe especificar el tipo de cuenta (Cheques o Ahorro).",
+        "Debe especificar el tipo de cuenta (Corriente o Ahorro).",
       ],
     },
     balance_disponible: {

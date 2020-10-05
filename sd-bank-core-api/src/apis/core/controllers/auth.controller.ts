@@ -94,14 +94,14 @@ export const signup = asyncHandler(
       await admin.save();
 
       await session.commitTransaction();
-      session.endSession();
 
       sendTokenResponse(newUser[0], 201, res, "sign up", admin);
     } catch (error) {
       await session.abortTransaction();
-      session.endSession();
 
       return errorHandler(error, req, res, next);
+    } finally {
+      session.endSession();
     }
   }
 );
@@ -224,35 +224,5 @@ export const forgotPassword = asyncHandler(
     console.log(resetToken);
 
     res.status(200).json(user);
-  }
-);
-
-// @desc     Delete user
-// @route    POST api/v1/auth/
-// @access   Private --> Only admins
-export const deleteUsuario = asyncHandler(
-  async (req: Request, res: Response, next: NextFunction): Promise<any> => {
-    const session: ClientSession = await startSession();
-
-    try {
-      const { _id } = req.params;
-
-      const user = await Usuario.findById(_id).session(session);
-
-      if (!user) return notFound({ entity: "Usuario", next });
-
-      await Usuario.deleteOne(user, { session });
-
-      await session.commitTransaction();
-
-      res.status(200).json({
-        exito: true,
-        mensaje: "¡Usuario eliminado satisfactoriamente!",
-      });
-    } catch (error) {
-      await session.abortTransaction();
-    } finally {
-      session.endSession();
-    }
   }
 );

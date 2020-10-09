@@ -1,6 +1,4 @@
 import mongoose, { Schema, Types } from "mongoose";
-// import intFormat from "biguint-format";
-// import FlakeId from "flake-idgen";
 
 const { ObjectId } = Schema.Types;
 
@@ -43,6 +41,12 @@ const CuentaSchema = new Schema(
         ref: "Transaccion",
       },
     ],
+    beneficiarios: [
+      {
+        type: ObjectId,
+        ref: "Beneficiario",
+      },
+    ],
     cantidad_total_en_transito: {
       type: Number,
       default: 0,
@@ -53,15 +57,4 @@ const CuentaSchema = new Schema(
   }
 );
 
-// Create a random but unique 12-digit account number
-/*AccountSchema.pre("save", function (next: any) {
-  const generator: FlakeId = new FlakeId();
-
-//   const uniqueAccNo: Buffer = generator.next();
-//   const uniqueAccNoFormat: string = String(intFormat(uniqueAccNo)).slice(0, 12);
-
-  (this as any).account_number = uniqueAccNoFormat;
-  next();
-});
-*/
 export default mongoose.model("Cuenta", CuentaSchema);

@@ -1,6 +1,7 @@
 import clienteRouter from "./cliente.routes";
 import authRouter from "./auth.routes";
 import cuentaRouter from "./cuenta.routes";
+import prestamoRouter from "./prestamo.routes";
 
 export const setupInternetBankingRoutes = (app: any): void => {
   const BASE_URL: string = "/internet-banking-api/v1";
@@ -8,4 +9,5 @@ export const setupInternetBankingRoutes = (app: any): void => {
   app.use(`${BASE_URL}/clientes`, clienteRouter);
   app.use(`${BASE_URL}/auth`, authRouter);
   app.use(`${BASE_URL}/cuentas`, cuentaRouter);
+  app.use(`${BASE_URL}/prestamos`, prestamoRouter);
 };

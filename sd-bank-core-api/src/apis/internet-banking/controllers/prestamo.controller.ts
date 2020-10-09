@@ -4,8 +4,10 @@ import Cliente from "../../../shared/models/Cliente";
 import { notFound } from "../../../shared/utils/err.helpers";
 import ErrorResponse from "../../../shared/utils/error-response";
 import Prestamo from "../../../shared/models/Prestamo";
+import { errorHandler } from "../../../shared/middlewares/error.middleware";
+import { ClientSession, startSession } from "mongoose";
 
-export const getAllPrestamos = asyncHandler(
+export const getAllPrestamosFromClienteId = asyncHandler(
   async (req: Request, res: Response, next: NextFunction) => {
     const { _id } = req.params;
 
@@ -13,7 +15,7 @@ export const getAllPrestamos = asyncHandler(
 
     if (!cliente) return notFound({ entity: "Cliente", next });
 
-    const prestamos = await Prestamo.find({ cliente });
+    const prestamos = await Prestamo.find({ cliente: cliente._id });
     res.status(200).json(prestamos);
   }
 );
@@ -31,79 +33,92 @@ export const getPrestamoById = asyncHandler(
 
 export const payPrestamoByUser = asyncHandler(
   async (req: Request, res: Response, next: NextFunction) => {
-    const { monto, usuario_id } = req.body;
+    const session: ClientSession = await startSession();
 
-    const { _id } = req.params;
+    try {
+      session.startTransaction();
 
-    const montoNumber = Number(monto);
+      const { _id } = req.params;
+      const { monto, cliente_id } = req.body;
 
-    const cliente: any = await Cliente.findById(usuario_id);
+      const montoNumber = Number(monto);
 
-    if (!cliente) return notFound({ entity: "Cliente", next });
+      const cliente: any = await Cliente.findById(cliente_id);
 
-    const clientePrestamos = cliente.prestamos;
+      if (!cliente) return notFound({ entity: "Cliente", next });
 
-    const prestamoBelongsToUser = clientePrestamos.find(
-      (x: any) => String(x) === String(_id)
-    );
+      const clientePrestamos = cliente.prestamos;
 
-    if (!prestamoBelongsToUser) {
-      return next(
-        new ErrorResponse(
-          "El préstamo provisto no pertenece al usuario actual.",
-          404
-        )
+      const prestamoBelongsToUser = clientePrestamos.find(
+        (x: any) => String(x) === String(_id)
       );
-    }
 
-    const prestamo: any = await Prestamo.findOne({ _id });
+      if (!prestamoBelongsToUser) {
+        return next(
+          new ErrorResponse(
+            "El préstamo provisto no pertenece al usuario actual.",
+            404
+          )
+        );
+      }
 
-    if (!prestamo) {
-      return notFound({ entity: "Préstamo", next });
-    }
+      const prestamo: any = await Prestamo.findOne({ _id });
 
-    if (prestamo.cantidad_saldada === prestamo.cantidad_total) {
-      await Prestamo.deleteOne({ _id });
+      if (!prestamo) {
+        return notFound({ entity: "Préstamo", next });
+      }
 
-      const idxToDeletePrestamoFrom = cliente.prestamos.indexOf(_id);
+      if (prestamo.cantidad_saldada === prestamo.cantidad_total) {
+        await Prestamo.deleteOne({ _id });
 
-      cliente.prestamos.splice(idxToDeletePrestamoFrom, 1);
+        const idxToDeletePrestamoFrom = cliente.prestamos.indexOf(_id);
 
-      await cliente.save();
+        cliente.prestamos.splice(idxToDeletePrestamoFrom, 1);
 
-      return res.status(200).json({
+        await cliente.save();
+
+        return res.status(200).json({
+          exito: true,
+          mensaje: "El préstamo fue saldado por completo.",
+        });
+      }
+
+      if (montoNumber >= prestamo.total)
+        return next(
+          new ErrorResponse(
+            "No puede exceder la cantidad total del préstamo.",
+            400
+          )
+        );
+
+      if (montoNumber > prestamo.cantidad_restante)
+        return next(
+          new ErrorResponse(
+            "No puede exceder la cantidad restante del préstamo.",
+            400
+          )
+        );
+
+      const updatePaid = prestamo.cantidad_saldada + montoNumber;
+      const updateRemaining = prestamo.cantidad_total - updatePaid;
+
+      prestamo.cantidad_saldada = updatePaid;
+      prestamo.cantidad_restante = updateRemaining;
+
+      await prestamo.save();
+
+      await session.commitTransaction();
+
+      res.status(200).json({
         exito: true,
-        mensaje: "El préstamo fue saldado por completo.",
+        mensaje: "Pago realizado satisfactoriamente.",
       });
+    } catch (error) {
+      await session.abortTransaction();
+
+      return errorHandler(error, req, res, next);
+    } finally {
+      session.endSession();
     }
-
-    if (montoNumber >= prestamo.total)
-      return next(
-        new ErrorResponse(
-          "No puede exceder la cantidad total del préstamo.",
-          400
-        )
-      );
-
-    if (montoNumber > prestamo.cantidad_restante)
-      return next(
-        new ErrorResponse(
-          "No puede exceder la cantidad restante del préstamo.",
-          400
-        )
-      );
-
-    const updatePaid = prestamo.cantidad_saldada + montoNumber;
-    const updateRemaining = prestamo.cantidad_total - updatePaid;
-
-    prestamo.cantidad_saldada = updatePaid;
-    prestamo.cantidad_restante = updateRemaining;
-
-    await prestamo.save();
-
-    res.status(200).json({
-      exito: true,
-      mensaje: "Pago realizado satisfactoriamente.",
-    });
   }
 );

@@ -18,6 +18,10 @@ import {
 } from "../utils/cuenta.helpers";
 import ErrorResponse from "../../../shared/utils/error-response";
 import { notFound } from "../../../shared/utils/err.helpers";
+import TipoDeTransaccion from "../../../shared/models/TipoDeTransaccion";
+import { agregarSDBankBeneficiario } from "../utils/cuenta.helpers";
+import Beneficiario from "../../../shared/models/Beneficiario";
+import { agregarBeneficiarioInterbancario } from "../utils/cuenta.helpers";
 
 // @desc   Display the cuentas from a given usuario by searching for his/her id
 // @route  GET /api/v1/cuentas/usuario/:_id
@@ -37,6 +41,53 @@ export const getClienteCuentasByClienteId = asyncHandler(
     const cuentas = await Cuenta.find({ cliente: usuarioFound._id });
 
     res.status(200).json(cuentas);
+  }
+);
+
+export const getCuentaAndClienteByAccountNumber = asyncHandler(
+  async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void | Response> => {
+    const { _id, numero_de_cuenta } = req.params;
+
+    const remitente = await Cliente.findById(_id);
+
+    if (!remitente)
+      return notFound({
+        message: "No se halló ningún cliente con el _id provisto.",
+        next,
+      });
+
+    const cuenta: any = await Cuenta.findOne({ numero_de_cuenta });
+
+    if (!cuenta)
+      return notFound({
+        message: "No se halló ninguna cuenta con el número provisto.",
+        next,
+      });
+
+    const destinatario = await Cliente.findById(cuenta.cliente);
+
+    if (!destinatario)
+      return notFound({
+        message: "No se halló ningún cliente con el _id provisto.",
+        next,
+      });
+
+    if (String(remitente._id) === String(destinatario._id))
+      return next(
+        new ErrorResponse(
+          "No puede elegir una cuenta suya. La cuenta debe ser de alguien más.",
+          400
+        )
+      );
+
+    res.status(200).json({
+      cuenta,
+      cliente: destinatario,
+    });
   }
 );
 
@@ -135,9 +186,9 @@ export const transactionHistory = asyncHandler(
     res: Response,
     next: NextFunction
   ): Promise<void | Response> => {
-    const { cuenta } = req.params;
+    const { _id } = req.params;
 
-    const transactions = await Transaccion.find({ cuenta });
+    const transactions = await Transaccion.find({ entidad_asociada: _id });
 
     res.status(200).json(transactions);
   }
@@ -166,6 +217,64 @@ export const getUserDetailsByAccountNo = asyncHandler(
   }
 );
 
+export const getBeneficiariosMismoBanco = asyncHandler(
+  async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void | Response> => {
+    const { _id } = req.params;
+
+    const beneficiarios: any = await Beneficiario.find({ cuenta_cliente: _id });
+
+    const beneficiariosRes: Array<any> = [];
+
+    for (const beneficiario of beneficiarios) {
+      const cuentaEncontrada = await Cuenta.findOne({
+        numero_de_cuenta: beneficiario.cuenta_beneficiario,
+      });
+
+      if (cuentaEncontrada) beneficiariosRes.push(beneficiario);
+    }
+
+    res.status(200).json(beneficiariosRes);
+  }
+);
+
+export const getInterbankTransferBeneficiarios = asyncHandler(
+  async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void | Response> => {
+    const { _id } = req.params;
+
+    const cuenta: any = await Cuenta.findById(_id);
+
+    if (!cuenta)
+      return notFound({
+        message: "No se halló ninguna cuenta con el _id provisto.",
+        next,
+      });
+
+    const beneficiarios: any = await Beneficiario.find({
+      cuenta_cliente: cuenta._id,
+    });
+
+    let beneficiarioRes: Array<any> = [];
+
+    for (const beneficiario of beneficiarios) {
+      const cuentaEncontrada = await Cuenta.findOne({
+        numero_de_cuenta: beneficiario.cuenta_beneficiario,
+      });
+
+      if (!cuentaEncontrada) beneficiarioRes.push(beneficiario);
+    }
+
+    res.status(200).json(beneficiarioRes);
+  }
+);
+
 // @desc   Transfer funds to one of the usuario's cuentas
 // @route  PUT /api/v1/cuentas/:_id/personal-transfer
 // @access Private
@@ -180,7 +289,7 @@ export const transferToMyself = asyncHandler(
     try {
       session.startTransaction();
 
-      const { _id /* cuentaId */ } = req.params;
+      const { numero_de_cuenta } = req.params;
       const { cliente_id, destinatario_numero_de_cuenta, cantidad } = req.body;
 
       const areFieldsInvalid: string | undefined = validateAccProvidedFields(
@@ -205,7 +314,9 @@ export const transferToMyself = asyncHandler(
           next,
         });
 
-      const senderAcc: any = await Cuenta.findById(_id).session(session);
+      const senderAcc: any = await Cuenta.findOne({ numero_de_cuenta }).session(
+        session
+      );
 
       const areAccountsInvalid: string | undefined = validateAccounts(
         cliente_id,
@@ -226,6 +337,9 @@ export const transferToMyself = asyncHandler(
 
       if (notEnoughFunds) return next(new ErrorResponse(notEnoughFunds!, 400));
 
+      const senderInitialBalance: number = senderAcc.balance_disponible;
+      const receiverInitialBalance: number = receiverAcc.balance_disponible;
+
       transferFunds(senderAcc, receiverAcc, amountToTransfer);
 
       // getTransactionObjs() returns the objects from which the transactions will be created
@@ -240,35 +354,51 @@ export const transferToMyself = asyncHandler(
         receiver: sender,
       });
 
+      const tipoDeTransaccion: any = await TipoDeTransaccion.findOne({
+        tipo: "Transferencia propia",
+      }).session(session);
+
       const newTransactionFrom: any = await Transaccion.create(
-        [transactionFrom],
+        [
+          {
+            ...transactionFrom,
+            tipo: tipoDeTransaccion._id,
+            balance_anterior: senderInitialBalance,
+          },
+        ],
         { session }
       );
-      const newTransactionTo: any = await Transaccion.create([transactionTo], {
-        session,
-      });
+      const newTransactionTo: any = await Transaccion.create(
+        [
+          {
+            ...transactionTo,
+            tipo: tipoDeTransaccion._id,
+            balance_anterior: receiverInitialBalance,
+          },
+        ],
+        { session }
+      );
 
-      senderAcc.transacciones.push(newTransactionFrom._id);
-      receiverAcc.transacciones.push(newTransactionTo._id);
+      senderAcc.transacciones.push(newTransactionFrom[0]._id);
+      receiverAcc.transacciones.push(newTransactionTo[0]._id);
 
       await senderAcc.save();
       await receiverAcc.save();
 
       await session.commitTransaction();
-      session.endSession();
 
       res.status(200).json({
         exito: true,
         mensaje: `RD$${amountToTransfer} fueron transferidos satisfactoriamente.`,
-        no_aprobacion: undefined, // TODO: Generate approval number,
         cantidad: cantidad,
         impuesto: "RD$10.00",
       });
     } catch (error) {
       await session.abortTransaction();
-      session.endSession();
 
       return errorHandler(error, req, res, next);
+    } finally {
+      session.endSession();
     }
   }
 );
@@ -287,14 +417,39 @@ export const sameBankTransfer = asyncHandler(
     try {
       session.startTransaction();
       const { _id /* cuenta_id */ } = req.params;
-      const { cliente_id, destinatario_numero_de_cuenta, cantidad } = req.body;
+      const {
+        cliente_id,
+        destinatario_numero_de_cuenta,
+        cantidad,
+        agregar_beneficiario,
+        beneficiario_id,
+      } = req.body;
+
+      if (agregar_beneficiario && beneficiario_id)
+        return next(
+          new ErrorResponse(
+            "No puede mandar 'agregar_beneficiario' y 'beneficiario' en la misma petición.",
+            400
+          )
+        );
 
       const areFieldsInvalid: string | undefined = validateAccProvidedFields(
-        req
+        req,
+        false,
+        Boolean(beneficiario_id)
       );
 
       if (areFieldsInvalid)
         return next(new ErrorResponse(areFieldsInvalid!, 400));
+
+      let beneficiarioAsociado: any = undefined;
+
+      if (beneficiario_id) {
+        beneficiarioAsociado = await Beneficiario.findById(beneficiario_id);
+
+        if (!beneficiarioAsociado)
+          return notFound({ entity: "Beneficiario", next });
+      }
 
       const sender: any = await Cliente.findById(cliente_id).session(session);
 
@@ -304,13 +459,17 @@ export const sameBankTransfer = asyncHandler(
 
       if (!senderAcc)
         return notFound({
-          message: "No se encontró la cuenta del destinatario.",
+          message: "No se encontró la cuenta del remitente.",
           next,
         });
 
-      const receiverAcc: any = await Cuenta.findOne({
-        numero_de_cuenta: destinatario_numero_de_cuenta,
-      }).session(session);
+      const receiverAcc: any = beneficiarioAsociado
+        ? await Cuenta.findOne({
+            numero_de_cuenta: beneficiarioAsociado.cuenta_beneficiario,
+          }).session(session)
+        : await Cuenta.findOne({
+            numero_de_cuenta: destinatario_numero_de_cuenta,
+          }).session(session);
 
       if (!receiverAcc)
         return notFound({
@@ -324,7 +483,9 @@ export const sameBankTransfer = asyncHandler(
         return next(new ErrorResponse(isTransferPersonal!, 400));
 
       // Locate receiver by its associated usuario_id
-      const receiver = await Cliente.findById((receiverAcc as any).cliente);
+      const receiver: any = beneficiarioAsociado
+        ? await Cliente.findOne({ cedula: beneficiarioAsociado.cedula })
+        : await Cliente.findById((receiverAcc as any).cliente);
 
       if (!receiver)
         return notFound({
@@ -341,9 +502,41 @@ export const sameBankTransfer = asyncHandler(
 
       if (notEnoughFunds) return next(new ErrorResponse(notEnoughFunds!, 400));
 
+      const initialSenderBalance: number = senderAcc.balance_disponible;
+      const initialReceiverBalance: number = receiverAcc.balance_disponible;
+
       transferFunds(senderAcc, receiverAcc, amountToTransfer);
 
-      // getTransactionObjs() returns the objects from which the transactions will be created
+      if (agregar_beneficiario) {
+        const beneficiariosAsociados: any = await Beneficiario.find({
+          cuenta_cliente: senderAcc._id,
+        }).session(session);
+
+        const beneficiarioNoRegistrado = beneficiariosAsociados.find(
+          (beneficiarioVal: any) =>
+            beneficiarioVal.cuenta_beneficiario === receiverAcc.numero_de_cuenta
+        );
+
+        if (!Boolean(beneficiarioNoRegistrado))
+          await agregarSDBankBeneficiario({
+            receiver,
+            receiverAcc,
+            sender,
+            senderAcc,
+            session,
+          });
+      }
+
+      const tipoDeTransaccion = await TipoDeTransaccion.findOne({
+        tipo: "Transferencia a terceros",
+      }).session(session);
+
+      if (!tipoDeTransaccion)
+        return notFound({
+          message: "No se halló el tipo de transferencia especificado.",
+          next,
+        });
+
       const [
         transactionFrom,
         transactionTo,
@@ -356,34 +549,58 @@ export const sameBankTransfer = asyncHandler(
       });
 
       const newTransactionFrom: any = await Transaccion.create(
-        [transactionFrom],
+        [
+          {
+            ...transactionFrom,
+            tipo: tipoDeTransaccion._id,
+            balance_anterior: initialSenderBalance,
+          },
+        ],
         { session }
       );
-      const newTransactionTo: any = await Transaccion.create([transactionTo], {
-        session,
-      });
 
-      senderAcc.transacciones.push(newTransactionFrom._id);
-      receiverAcc.transacciones.push(newTransactionTo._id);
+      const newTransactionTo: any = await Transaccion.create(
+        [
+          {
+            ...transactionTo,
+            tipo: tipoDeTransaccion._id,
+            balance_anterior: initialReceiverBalance,
+          },
+        ],
+        {
+          session,
+        }
+      );
+
+      senderAcc.transacciones.push(newTransactionFrom[0]._id);
+      receiverAcc.transacciones.push(newTransactionTo[0]._id);
 
       await senderAcc.save();
       await receiverAcc.save();
 
+      const total: number = amountToTransfer + 10;
+
       await session.commitTransaction();
-      session.endSession();
 
       res.status(200).json({
         exito: true,
-        mensaje: `RD$${amountToTransfer}.00 fueron transferidos satisfactoriamente!`,
-        aprobacion_no: undefined, // TODO: Generate approval number,
-        cantidad: `RD$${amountToTransfer}.00`,
-        impuesto: "RD$10.00",
+        mensaje: `RD$${amountToTransfer.toLocaleString()}.00 fueron transferidos satisfactoriamente!`,
+        meta: {
+          destinatario_banco: "SD Bank",
+          destinatario_cedula: receiver.cedula,
+          destinatario_nombre: `${receiver.nombre} ${receiver.apellido}`,
+          destinatario_tipo_de_cuenta: receiverAcc.tipo_de_cuenta,
+          cantidad: `RD$${amountToTransfer.toLocaleString()}.00`,
+          impuesto: "RD$10.00",
+          total: `RD$${total.toLocaleString()}`,
+        },
       });
     } catch (error) {
       await session.abortTransaction();
-      session.endSession();
 
       return errorHandler(error, req, res, next);
+    } finally {
+      session.endSession();
     }
   }
 );
@@ -397,7 +614,7 @@ export const interbankTransfer = asyncHandler(
     res: Response,
     next: NextFunction
   ): Promise<void | Response> => {
-    const session = await startSession();
+    const session: ClientSession = await startSession();
 
     try {
       session.startTransaction();
@@ -408,17 +625,38 @@ export const interbankTransfer = asyncHandler(
         destinatario_banco,
         destinatario_cedula,
         destinatario_nombre,
+        destinatario_tipo_de_cuenta,
         destinatario_numero_de_cuenta,
         cantidad,
+        agregar_beneficiario,
+        beneficiario_id,
       } = req.body;
+
+      if (agregar_beneficiario && beneficiario_id)
+        return next(
+          new ErrorResponse(
+            "No puede mandar 'agregar_beneficiario' y 'beneficiario' en la misma petición.",
+            400
+          )
+        );
 
       const areFieldsInvalid: string | undefined = validateAccProvidedFields(
         req,
-        true
+        true,
+        Boolean(beneficiario_id)
       );
 
       if (areFieldsInvalid)
         return next(new ErrorResponse(areFieldsInvalid!, 400));
+
+      let beneficiarioAsociado: any = undefined;
+
+      if (beneficiario_id) {
+        beneficiarioAsociado = await Beneficiario.findById(beneficiario_id);
+
+        if (!beneficiarioAsociado)
+          return notFound({ entity: "Beneficiario", next });
+      }
 
       const sender: any = await Cliente.findById(cliente_id).session(session);
 
@@ -448,36 +686,125 @@ export const interbankTransfer = asyncHandler(
 
       if (notEnoughFunds) return next(new ErrorResponse(notEnoughFunds!, 400));
 
+      const initialBalance: number = senderAcc.balance_disponible;
+
       processInterbankTransfer(senderAcc, amountToTransfer);
 
-      const transactionObj = getTransferTransactionObj(req);
+      if (agregar_beneficiario) {
+        const beneficiariosAsociados: any = await Beneficiario.find({
+          cuenta_cliente: senderAcc._id,
+        }).session(session);
 
-      const newTransaction = await Transaccion.create([transactionObj], {
-        session,
+        const beneficiarioNoRegistrado = beneficiariosAsociados.find(
+          (beneficiarioVal: any) =>
+            beneficiarioVal.cuenta_beneficiario ===
+            destinatario_numero_de_cuenta
+        );
+
+        if (!Boolean(beneficiarioNoRegistrado)) {
+          const destinatario = {
+            destinatario_banco,
+            destinatario_cedula,
+            destinatario_nombre,
+            destinatario_tipo_de_cuenta,
+            destinatario_cuenta: destinatario_numero_de_cuenta,
+          };
+
+          await agregarBeneficiarioInterbancario({
+            session,
+            sender,
+            senderAcc,
+            destinatario,
+          });
+        }
+      }
+
+      const tipoTransaccion = await TipoDeTransaccion.findOne({
+        tipo: "Transferencia interbancaria",
       });
 
-      senderAcc.transacciones.push(newTransaction._id);
+      const transactionObj = getTransferTransactionObj(req, senderAcc, beneficiarioAsociado);
+
+      const newTransaction: any = await Transaccion.create(
+        [
+          {
+            ...transactionObj,
+            tipo: tipoTransaccion!._id,
+            balance_anterior: initialBalance,
+          },
+        ],
+        {
+          session,
+        }
+      );
+
+      senderAcc.transacciones.push(newTransaction[0]._id);
+
+      const total: number = amountToTransfer + 10;
 
       await senderAcc.save();
 
       await session.commitTransaction();
-      session.endSession();
 
       res.status(200).json({
         exito: true,
-        mensaje: `RD$${amountToTransfer}.00 fueron transferidos satisfactoriamente.`,
-        destinatario_banco,
-        destinatario_cedula,
-        destinatario_nombre,
-        no_aprobacion: undefined, // TODO: Generate approval number,
-        cantidad: `RD$${amountToTransfer}.00`,
-        impuesto: "RD$10.00",
+        mensaje: `RD$${amountToTransfer.toLocaleString()}.00 fueron transferidos satisfactoriamente.`,
+        meta: {
+          destinatario_banco,
+          destinatario_cedula,
+          destinatario_nombre,
+          destinatario_tipo_de_cuenta,
+          cantidad: `RD$${amountToTransfer}.00`,
+          impuesto: "RD$10.00",
+          total: `RD$${total.toLocaleString()}`,
+        },
       });
     } catch (error) {
       await session.abortTransaction();
-      session.endSession();
 
       return errorHandler(error, req, res, next);
+    } finally {
+      session.endSession();
     }
+  }
+);
+
+export const getTipoTransaccionById = asyncHandler(
+  async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void | Response> => {
+    const { _id } = req.params;
+
+    const tipoDeTransaccion = await TipoDeTransaccion.findById(_id);
+
+    if (!tipoDeTransaccion)
+      return notFound({
+        message: "No se halló ningún tipo de transacción con el _id provisto.",
+        next,
+      });
+
+    res.status(200).json(tipoDeTransaccion);
+  }
+);
+
+export const getTransaccionById = asyncHandler(
+  async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void | Response> => {
+    const { _id } = req.params;
+
+    const transaccion = await Transaccion.findById(_id);
+
+    if (!transaccion)
+      return notFound({
+        entity: "No se halló ninguna transacción con el _id provisto.",
+        next,
+      });
+
+    res.status(200).json(transaccion);
   }
 );

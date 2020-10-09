@@ -30,6 +30,12 @@ const TransaccionSchema = new Schema(
       type: Boolean,
       default: true,
     },
+    balance_anterior: {
+      type: Number,
+    },
+    balance_posterior: {
+      type: Number,
+    },
     cantidad_en_transito: {
       type: Number,
       default: 0,

@@ -9,7 +9,7 @@ import {
   const prestamoRouter: Router = Router();
   
   prestamoRouter.route("").get(getPrestamos).post(createPrestamo);
-  prestamoRouter.route("/:_id").get(getPrestamoById).put(updatePrestamo)
+  prestamoRouter.route("/:_id").get(getPrestamoById).put(updatePrestamo);
   
   
   export default prestamoRouter;

@@ -1,5 +1,5 @@
+import { asyncHandler } from './../../../shared/middlewares/async.middleware';
 import axios from "axios";
-import { asyncHandler } from "../../middlewares/async.middleware";
 import { Request, Response, NextFunction } from "express"; 
 
 export const getAllTiposDeTransaccion = asyncHandler(

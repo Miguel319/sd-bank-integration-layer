@@ -17,7 +17,9 @@ export const errorHandler = async (
   if (err.name === "CastError" || err.message.includes("404")) {
     const entityArr: string = err.message.split(" ");
 
-    const entity = entityArr[entityArr.length -1].replace(/[""]/g, "").toLowerCase();
+    const entity = entityArr[entityArr.length - 1]
+      .replace(/[""]/g, "")
+      .toLowerCase();
 
     const message: string = `No se pudo encontrar ningún/ninguna ${entity} con el ID provisto.`;
 
@@ -44,12 +46,21 @@ export const errorHandler = async (
   }
 
   // Authorization validation
-  if (err.name === "JsonWebTokenError") {
+  if (err.name === "JsonWebTokenError")
     error = new ErrorResponse("No está autorizado a acceder a esta ruta.", 401);
-  }
 
-  res.status(error.statusCode || 500).json({
-    exito: false,
-    error: error.message,
-  });
+  const firstProp: any = Object.keys(err)[0];
+
+  console.log();
+
+  const errRes = !err._message
+    ? err.response.data
+    : {
+        exito: false,
+        error: error.message,
+      };
+
+  const statusCode: number = err._message ? 500 : err.response.status;
+
+  res.status(statusCode || 500).json(errRes);
 };

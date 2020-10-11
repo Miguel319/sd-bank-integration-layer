@@ -23,10 +23,7 @@ const SucursalSchema = new Schema(
     },
     codigo_postal: {
       type: String,
-      required: [
-        true,
-        "El código postal (codigo_postal) es obligatorio.",
-      ],
+      required: [true, "El código postal (codigo_postal) es obligatorio."],
     },
     direccion: String,
     cajeros: [
@@ -42,7 +39,7 @@ const SucursalSchema = new Schema(
 SucursalSchema.pre("save", function (next: any) {
   const thisRef: any = this;
 
-  thisRef.direccion = `${thisRef.calle} ${thisRef.numero}, ${thisRef.codigo_postal}. ${thisRef.ciudad}, República Dominicana.`;
+  thisRef.direccion = `${thisRef.calle} ${thisRef.numero}. ${thisRef.ciudad}, República Dominicana. ${thisRef.codigo_postal}.`;
   next();
 });
 

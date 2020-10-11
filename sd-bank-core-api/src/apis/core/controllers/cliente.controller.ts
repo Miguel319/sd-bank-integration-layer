@@ -62,7 +62,7 @@ export const createCliente = asyncHandler(
     try {
       session.startTransaction();
 
-      const { cedula, nombre, apellido, sexo } = req.body;
+      const { cedula, nombre, apellido, sexo, telefono } = req.body;
 
       const clienteFound = await Cliente.findOne({ cedula }).session(session);
 
@@ -74,7 +74,7 @@ export const createCliente = asyncHandler(
           )
         );
 
-      const clienteToCreate = { cedula, nombre, apellido, sexo };
+      const clienteToCreate = { cedula, nombre, apellido, sexo, telefono };
 
       await Cliente.create([clienteToCreate], { session });
 
@@ -105,10 +105,11 @@ export const updateCliente = asyncHandler(
       session.startTransaction();
 
       const { _id } = req.params;
+      const { cedula, nombre, apellido, sexo, telefono } = req.body;
 
-      const clienteToUpdt = getClienteToUpdt(req);
+      const bodyNotEmpty = getClienteToUpdt(req);
 
-      if (!clienteToUpdt)
+      if (!bodyNotEmpty)
         return next(
           new ErrorResponse(
             "Debe proveer al menos un campo para realizar la actualización.",
@@ -116,7 +117,23 @@ export const updateCliente = asyncHandler(
           )
         );
 
-      await Cliente.updateOne({ _id }, clienteToUpdt, { session });
+      const cliente: any = await Cliente.findById(_id);
+
+      if (!cliente)
+        return notFound({
+          message: "No se halló ningún cliente con el _id provisto.",
+          next,
+        });
+
+      const clientToUpdt = {
+        cedula: cedula || cliente.cedula,
+        nombre: nombre || cliente.nombre,
+        apellido: apellido || cliente.apellido,
+        sexo: sexo || cliente.sexo,
+        telefono: telefono || cliente.telefono,
+      };
+
+      await Cliente.updateOne(cliente, clientToUpdt, { session });
 
       await session.commitTransaction();
 

@@ -1,9 +1,9 @@
-import { asyncHandler } from "../middlewares/async.middleware";
 import { Request, Response, NextFunction } from "express";
-import Sucursal from "../models/Sucursal";
-import { notFound } from "../utils/err.helpers";
-import { validateFieldsOnUpdt } from "../utils/sucursal.helpers";
-import ErrorResponse from "../utils/error-response";
+import { asyncHandler } from "../shared/middlewares/async.middleware";
+import Sucursal from "../shared/models/Sucursal";
+import { notFound } from "../shared/utils/err.helpers";
+import ErrorResponse from "../shared/utils/error-response";
+import { validateFieldsOnUpdt } from "../shared/utils/sucursal.helpers";
 
 export const createSucursal = asyncHandler(
   async (

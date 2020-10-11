@@ -4,9 +4,17 @@ const { ObjectId } = Schema.Types;
 
 const TransaccionSchema = new Schema(
   {
-    cuenta: {
+    tipo_entidad_asociada: {
+      type: String,
+      required: [
+        true,
+        "Debe especificar el tipo de la entidad asociada ('tipo_entidad_asociada'): Cuenta o Prestamo.",
+      ],
+      enum: ["Cuenta", "Prestamo"],
+    },
+    entidad_asociada: {
       type: ObjectId,
-      ref: "Cuenta",
+      refPath: "tipo_entidad_asociada",
     },
     descripcion: String,
     cantidad: {
@@ -14,13 +22,19 @@ const TransaccionSchema = new Schema(
       required: [true, "Debe especificar la cantidad de la transacción."],
     },
     tipo: {
-      type: String,
-      required: [true, "Debe especificar el tipo de transacción: Transferencia, Retiro, Compra o Depósito."],
-      enum: ["Transferencia", "Retiro", "Compra", "Deposito"],
+      type: ObjectId,
+      ref: "TipoDeTransaccion",
+      required: [true, "Debe especificar el tipo de transacción."],
     },
     aprobada: {
       type: Boolean,
       default: true,
+    },
+    balance_anterior: {
+      type: Number,
+    },
+    balance_posterior: {
+      type: Number,
     },
     cantidad_en_transito: {
       type: Number,
@@ -28,7 +42,7 @@ const TransaccionSchema = new Schema(
     },
     destinatario: {
       type: ObjectId,
-      ref: "Usuario",
+      ref: "Cliente",
     },
   },
   {

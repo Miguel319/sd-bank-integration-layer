@@ -1,41 +1,42 @@
+import { asyncHandler } from './../../../shared/middlewares/async.middleware';
 import axios from "axios";
-import { asyncHandler } from "../../middlewares/async.middleware";
 import { Request, Response, NextFunction } from "express";
-//http://localhost:3002/core-api/v1
 
-export const getPerfiles = asyncHandler(
+export const getPrestamos = asyncHandler(
     async (req: Request, res: Response, next: NextFunction): Promise<any> => {
       const CORE_API_URL = String(process.env.CORE_API_URL);
   
-      const { data } = await axios.get(`${CORE_API_URL}/perfiles`);
+      const { data } = await axios.get(`${CORE_API_URL}/prestamos`);
   
       res.status(200).json(data);
     }
   );
 
-  export const getPerfilesById = asyncHandler(
+  export const getPrestamoById = asyncHandler(
     async (req: Request, res: Response, next: NextFunction): Promise<any> => {
       const { _id } = req.params;
       const CORE_API_URL = String(process.env.CORE_API_URL);
   
-      const { data, status } = await axios.get(`${CORE_API_URL}/perfiles/${_id}`);
+      const { data, status } = await axios.get(`${CORE_API_URL}/prestamos/${_id}`);
   
       res.status(status).json(data);
     }
   );
 
-  export const createPerfiles = asyncHandler(
+  export const createPrestamo = asyncHandler(
     async (req: Request, res: Response, next: NextFunction): Promise<void> => { 
       try {
-        const { rol, descripcion } = req.body;
+        const { descripcion, cantidad_total, usuario_id } = req.body;
         const CORE_API_URL = String(process.env.CORE_API_URL);
   
-        const perfilACrear = {
-          rol,
-          descripcion,
-        };
+        const newPrestamo = {
+            descripcion,
+            cantidad_total,
+            remaining: Number(cantidad_total),
+            usuario_id,
+          };
   
-        const { data } = await axios.post(`${CORE_API_URL}/perfiles/`, perfilACrear);
+        const { data } = await axios.post(`${CORE_API_URL}/prestamos/`, newPrestamo);
 
          
         res.status(201).json(data);
@@ -47,19 +48,19 @@ export const getPerfiles = asyncHandler(
     }
   );
 
-  export const updatePerfiles = asyncHandler(
+  export const updatePrestamo = asyncHandler(
     async (req: Request, res: Response, next: NextFunction): Promise<any> => {
       const { _id } = req.params;
-      const { rol, descripcion } = req.body;
+      const { descripcion } = req.body;
       const CORE_API_URL = String(process.env.CORE_API_URL);
 
-      const perfil = {
-        rol,
-        descripcion,
+      const description = {
+        descripcion
       };
   
-      const { data } = await axios.post(`${CORE_API_URL}/perfiles/`, perfil);
+      const { data } = await axios.put(`${CORE_API_URL}/prestamos/${_id}`, description);
   
-      res.status(201).json(data);
+    res.status(200).json(data);
+     
     }
   );

@@ -1,14 +1,13 @@
 import mongoose, { Schema } from "mongoose";
-import { NextFunction } from "express";
 
 const { ObjectId } = Schema.Types;
 
-const ClienteSchema = new Schema(
+const CajeroSchema = new Schema(
   {
     cedula: {
       type: String,
       required: [true, "La cédula es obligatoria."],
-      unique: [true, "Ya existe un usuario con esta cédula."],
+      unique: [true, "Ya existe un cajero con esta cédula."],
       minlength: [11, "La cédula debe tener 11 caracteres."],
       maxlength: [11, "La cédula debe tener 11 caracteres."],
     },
@@ -20,36 +19,26 @@ const ClienteSchema = new Schema(
       type: String,
       required: [true, "El apellido es obligatorio."],
     },
-    sexo: {
-      type: String,
-      required: [true, "Debe especificar el 'sexo': Femenino o Masculino."],
-      enum: ["Femenino", "Masculino"],
-    },
-    telefono: {
-      type: String,
-      min: [10, "El número telefónico debe tener 10 caracteres."],
-      max: [10, "El número telefónico debe tener 10 caracteres."],
+    sucursal: {
+      type: ObjectId,
+      ref: "Sucursal",
     },
     usuario: {
       type: ObjectId,
       ref: "Usuario",
     },
-    cuentas_bancarias: [
+    cuadres: [
       {
         type: ObjectId,
-        ref: "Cuenta",
+        ref: "Cuadre",
       },
     ],
-    prestamos: [
-      {
-        type: ObjectId,
-        ref: "Prestamo",
-      },
-    ],
+    resetcontraseniaToken: String,
+    resetcontraseniaExpire: Date,
   },
   {
     timestamps: true, // created_at, updated_at
   }
 );
 
-export default mongoose.model("Cliente", ClienteSchema);
+export default mongoose.model("Cajero", CajeroSchema);

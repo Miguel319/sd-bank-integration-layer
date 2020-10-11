@@ -4,17 +4,8 @@ import { Request, Response, NextFunction } from "express";
 import { startSession } from "mongoose";
 import { getCoreAPIURL } from "../../../shared/utils/constants";
 
-// export const abc = asyncHandler(
-//   async (req: Request, res: Response, next: NextFunction): Promise<any> => {
-//     const { data } = await axios.get(`${getCoreAPIURL()}/cuentas`);
-
-//     res.status(200).json(data)
-//   }
-// );
-
 export const getCuentas = asyncHandler(
   async (req: Request, res: Response, next: NextFunction): Promise<any> => {
-    // const { data } = await axios.get(`${getCoreAPIURL()}/cuentas`);
     const { data } = await axios.get(`${getCoreAPIURL()}/cuentas`);
 
     res.status(200).json(data);

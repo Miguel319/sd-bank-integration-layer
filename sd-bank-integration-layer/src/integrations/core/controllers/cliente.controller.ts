@@ -18,7 +18,6 @@ export const getClienteById = asyncHandler(
     const { data, status } = await axios.get(
       `${getCoreAPIURL()}/clientes/${_id}`
     );
-    // const { data } = await axios.get(`${getCoreAPIURL}/clientes/${_id}`);
 
     res.status(status).json(data);
   }
@@ -83,7 +82,7 @@ export const deleteCliente = asyncHandler(
     const { data, status } = await axios.delete(
       `${getCoreAPIURL()}/clientes/${_id}`
     );
-    
+
     res.status(status).json(data);
   }
 );

@@ -1,9 +1,9 @@
-import { asyncHandler } from "../middlewares/async.middleware";
+import { asyncHandler } from './../shared/middlewares/async.middleware';
 import { Request, Response, NextFunction } from "express";
-import ErrorResponse from "../utils/error-response";
-import Prestamo from "../models/Prestamo";
-import Usuario from "../models/Usuario";
-import { notFound } from "../utils/err.helpers";
+import Prestamo from '../shared/models/Prestamo';
+import { notFound } from '../shared/utils/err.helpers';
+import Usuario from '../shared/models/Usuario';
+import ErrorResponse from '../shared/utils/error-response';
 
 export const getLoanById = asyncHandler(
   async (req: Request, res: Response, next: NextFunction) => {

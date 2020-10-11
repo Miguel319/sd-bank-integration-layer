@@ -1,13 +1,12 @@
+import { asyncHandler } from "./../../../shared/middlewares/async.middleware";
 import axios from "axios";
-import { asyncHandler } from "../../middlewares/async.middleware";
 import { Request, Response, NextFunction } from "express";
 import { startSession } from "mongoose";
+import { getCoreAPIURL } from "../../../shared/utils/constants";
 
 export const getClientes = asyncHandler(
   async (req: Request, res: Response, next: NextFunction): Promise<any> => {
-    const CORE_API_URL = String(process.env.CORE_API_URL);
-
-    const { data } = await axios.get(`${CORE_API_URL}/clientes`);
+    const { data } = await axios.get(`${getCoreAPIURL()}/clientes`);
 
     res.status(200).json(data);
   }
@@ -16,10 +15,10 @@ export const getClientes = asyncHandler(
 export const getClienteById = asyncHandler(
   async (req: Request, res: Response, next: NextFunction): Promise<any> => {
     const { _id } = req.params;
-    const CORE_API_URL = String(process.env.CORE_API_URL);
-
-    const { data, status } = await axios.get(`${CORE_API_URL}/clientes/${_id}`);
-    // const { data } = await axios.get(`${CORE_API_URL}/clientes/${_id}`);
+    const { data, status } = await axios.get(
+      `${getCoreAPIURL()}/clientes/${_id}`
+    );
+    // const { data } = await axios.get(`${getCoreAPIURL}/clientes/${_id}`);
 
     res.status(status).json(data);
   }
@@ -31,27 +30,27 @@ export const createCliente = asyncHandler(
 
     try {
       session.startTransaction();
-      const { cedula, nombre, apellido, sexo } = req.body;
-      const CORE_API_URL = String(process.env.CORE_API_URL);
+      const { cedula, nombre, apellido, sexo, telefono } = req.body;
 
       const cliente = {
         cedula,
         nombre,
         apellido,
         sexo,
+        telefono,
       };
 
-      const { data } = await axios.post(`${CORE_API_URL}/clientes/`, cliente);
+      const { data } = await axios.post(`${getCoreAPIURL()}/clientes`, cliente);
 
       await session.commitTransaction();
-      session.endSession();
 
       res.status(201).json(data);
     } catch (error) {
       await session.abortTransaction();
-      session.endSession();
 
       res.status(400).json(error.response.data);
+    } finally {
+      session.endSession();
     }
   }
 );
@@ -60,7 +59,6 @@ export const updateCliente = asyncHandler(
   async (req: Request, res: Response, next: NextFunction): Promise<any> => {
     const { _id } = req.params;
     const { cedula, nombre, apellido, sexo } = req.body;
-    const CORE_API_URL = String(process.env.CORE_API_URL);
 
     const cliente = {
       cedula,
@@ -69,8 +67,23 @@ export const updateCliente = asyncHandler(
       sexo,
     };
 
-    const { data } = await axios.put(`${CORE_API_URL}/clientes/${_id}`, cliente);
+    const { data, status } = await axios.put(
+      `${getCoreAPIURL()}/clientes/${_id}`,
+      cliente
+    );
 
-    res.status(201).json(data);
+    res.status(status).json(data);
+  }
+);
+
+export const deleteCliente = asyncHandler(
+  async (req: Request, res: Response, next: NextFunction): Promise<any> => {
+    const { _id } = req.params;
+
+    const { data, status } = await axios.delete(
+      `${getCoreAPIURL()}/clientes/${_id}`
+    );
+    
+    res.status(status).json(data);
   }
 );

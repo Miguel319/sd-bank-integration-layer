@@ -14,6 +14,7 @@ import {
   getClienteCuentasByClienteId,
   getBeneficiariosMismoBanco,
   getInterbankTransferBeneficiarios,
+  getBeneficiariosFromCuenta,
 } from "../controllers/cuenta.controller";
 
 const cuentaRouter: Router = Router();
@@ -34,6 +35,8 @@ cuentaRouter.get(
 
 cuentaRouter.get("/transacciones/:_id/tipo", getTipoTransaccionById);
 cuentaRouter.get("/transacciones/:_id", getTransaccionById);
+
+cuentaRouter.get("/:_id/beneficiarios", getBeneficiariosFromCuenta);
 cuentaRouter.get("/:_id/beneficiarios-mismo-banco", getBeneficiariosMismoBanco);
 cuentaRouter.get(
   "/:_id/beneficiarios-interbancarios",

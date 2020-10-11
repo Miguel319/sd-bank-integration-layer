@@ -34,10 +34,10 @@ const UsuarioSchema = new Schema(
       ],
       enum: ["Cliente", "Cajero", "Admin"],
     },
-    // entidad_asociada: {
-    // type: ObjectId,
-    // refPath: "tipo_entidad_asociada",
-    // },
+    entidad_asociada: {
+      type: ObjectId,
+      refPath: "tipo_entidad_asociada",
+    },
     perfil: {
       type: ObjectId,
       ref: "Perfil",

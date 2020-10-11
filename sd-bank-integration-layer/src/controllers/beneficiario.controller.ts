@@ -1,9 +1,9 @@
 import { Request, Response, NextFunction } from "express";
-import Beneficiario from "../models/Beneficiario";
-import { asyncHandler } from "../middlewares/async.middleware";
-import Account from "../models/Cuenta";
-import User from "../models/Usuario";
-import { notFound } from "../utils/err.helpers";
+import { asyncHandler } from "../shared/middlewares/async.middleware";
+import Beneficiario from "../shared/models/Beneficiario";
+import Cuenta from "../shared/models/Cuenta";
+import Usuario from "../shared/models/Usuario";
+import { notFound } from "../shared/utils/err.helpers";
 
 type BeneficiaryType = {
   nombre?: string;
@@ -26,7 +26,7 @@ export const createBeneficiary = asyncHandler(
     } = req.body;
 
     // 1. search for beneficiary if beneficiary_account is from sd-bank -> return name, type, id
-    const account = await Account.find({ numero_cuenta: cuenta_beneficiario });
+    const account = await Cuenta.find({ numero_cuenta: cuenta_beneficiario });
 
     const beneficiary: BeneficiaryType = {
       nombre,
@@ -39,7 +39,7 @@ export const createBeneficiary = asyncHandler(
 
     if (account) {
       const _id = (account as any)._id;
-      const user = await User.findById(_id);
+      const user = await Usuario.findById(_id);
 
       beneficiary.nombre = `${(user as any).nombre} ${(user as any).apellido}`;
       beneficiary.email = (user as any).email;

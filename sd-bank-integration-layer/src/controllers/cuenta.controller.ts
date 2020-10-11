@@ -1,26 +1,28 @@
 import { Request, Response, NextFunction } from "express";
-import Cuenta from "../models/Cuenta";
-import { asyncHandler } from "../middlewares/async.middleware";
-import Usuario from "../models/Usuario";
-import ErrorResponse from "../utils/error-response";
-import Transaccion from "../models/Transaccion";
-import { notFound } from "../utils/err.helpers";
 import {
   validateAccounts,
   validateSameBankTransfer,
   processInterbankTransfer,
   getTransferTransactionObj,
-} from "../utils/cuenta.helpers";
+} from "../shared/utils/cuenta.helpers";
 import {
   getTransactionObjs,
   validateAccProvidedFields,
-} from "../utils/cuenta.helpers";
+} from "../shared/utils/cuenta.helpers";
+
 import {
   checkBalance,
   transferFunds,
   invalidInterbankTransfer,
-} from "../utils/cuenta.helpers";
+} from "../shared/utils/cuenta.helpers";
+
 import { startSession } from "mongoose";
+import { asyncHandler } from "../shared/middlewares/async.middleware";
+import Usuario from "../shared/models/Usuario";
+import Cuenta from "../shared/models/Cuenta";
+import { notFound } from "../shared/utils/err.helpers";
+import ErrorResponse from "../shared/utils/error-response";
+import Transaccion from "../shared/models/Transaccion";
 
 // @desc   Create account
 // @route  POST /api/v1/accounts

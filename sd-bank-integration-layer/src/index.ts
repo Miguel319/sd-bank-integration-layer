@@ -5,8 +5,8 @@ import bodyParser from "body-parser";
 import cookieParser from "cookie-parser";
 import dotenv from "dotenv";
 import mongoose from "mongoose";
-import { errorHandler } from "./middlewares/error.middleware";
 import setupRoutes from "./routes/index.routes";
+import { errorHandler } from "./shared/middlewares/error.middleware";
 
 const app = express();
 app.use(cors());

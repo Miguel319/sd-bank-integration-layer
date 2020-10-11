@@ -1,10 +1,10 @@
-import { asyncHandler } from "../middlewares/async.middleware";
 import { Request, Response, NextFunction } from "express";
-import Cajero from "../models/Cajero";
-import { validateCashierCredentials } from "../utils/cajero.helpers";
-import { sendTokenResponse } from "../utils/auth.helpers";
-import ErrorResponse from "../utils/error-response";
 import { startSession } from "mongoose";
+import { asyncHandler } from "../shared/middlewares/async.middleware";
+import Cajero from "../shared/models/Cajero";
+import { sendTokenResponse } from "../shared/utils/auth.helpers";
+import { validateCashierCredentials } from "../shared/utils/cajero.helpers";
+import ErrorResponse from "../shared/utils/error-response";
 
 // @desc     Cashier login
 // @route    POST

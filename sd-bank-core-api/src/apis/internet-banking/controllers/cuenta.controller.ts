@@ -217,6 +217,20 @@ export const getUserDetailsByAccountNo = asyncHandler(
   }
 );
 
+export const getBeneficiariosFromCuenta = asyncHandler(
+  async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void | Response> => {
+    const { _id } = req.params;
+
+    const beneficiarios: any = await Beneficiario.find({ cuenta_cliente: _id });
+
+    res.status(200).json(beneficiarios);
+  }
+);
+
 export const getBeneficiariosMismoBanco = asyncHandler(
   async (
     req: Request,
@@ -723,7 +737,11 @@ export const interbankTransfer = asyncHandler(
         tipo: "Transferencia interbancaria",
       });
 
-      const transactionObj = getTransferTransactionObj(req, senderAcc, beneficiarioAsociado);
+      const transactionObj = getTransferTransactionObj(
+        req,
+        senderAcc,
+        beneficiarioAsociado
+      );
 
       const newTransaction: any = await Transaccion.create(
         [

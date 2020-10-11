@@ -1,9 +1,8 @@
-import mongoose, { Schema } from "mongoose";
-import { NextFunction } from "express";
+import mongoose, { model, Schema, Types } from "mongoose";
 
-const { ObjectId } = Schema.Types;
+const { ObjectId } = Types;
 
-const ClienteSchema = new Schema(
+const AdminSchema = new Schema(
   {
     cedula: {
       type: String,
@@ -25,31 +24,12 @@ const ClienteSchema = new Schema(
       required: [true, "Debe especificar el 'sexo': Femenino o Masculino."],
       enum: ["Femenino", "Masculino"],
     },
-    telefono: {
-      type: String,
-      min: [10, "El número telefónico debe tener 10 caracteres."],
-      max: [10, "El número telefónico debe tener 10 caracteres."],
-    },
     usuario: {
       type: ObjectId,
       ref: "Usuario",
     },
-    cuentas_bancarias: [
-      {
-        type: ObjectId,
-        ref: "Cuenta",
-      },
-    ],
-    prestamos: [
-      {
-        type: ObjectId,
-        ref: "Prestamo",
-      },
-    ],
   },
-  {
-    timestamps: true, // created_at, updated_at
-  }
+  { timestamps: true }
 );
 
-export default mongoose.model("Cliente", ClienteSchema);
+export default model("Admin", AdminSchema);

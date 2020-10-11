@@ -1,8 +1,10 @@
 import { asyncHandler } from "./../../../shared/middlewares/async.middleware";
 import axios from "axios";
 import { Request, Response, NextFunction } from "express";
-import { startSession } from "mongoose";
+import { startSession, ClientSession } from "mongoose";
 import { getCoreAPIURL } from "../../../shared/utils/constants";
+import { errorHandler } from "../../../../../sd-bank-core-api/src/shared/middlewares/error.middleware";
+import Cliente from "../../../shared/models/Cliente";
 
 export const getClientes = asyncHandler(
   async (req: Request, res: Response, next: NextFunction): Promise<any> => {
@@ -39,15 +41,22 @@ export const createCliente = asyncHandler(
         telefono,
       };
 
-      const { data } = await axios.post(`${getCoreAPIURL()}/clientes`, cliente);
+      const { data, status } = await axios.post(
+        `${getCoreAPIURL()}/clientes`,
+        cliente
+      );
+
+      console.log(data);
+
+      await Cliente.create([{ ...data.meta.cliente }], { session });
 
       await session.commitTransaction();
 
-      res.status(201).json(data);
+      res.status(status).json(data);
     } catch (error) {
       await session.abortTransaction();
 
-      res.status(400).json(error.response.data);
+      return errorHandler(error, req, res, next);
     } finally {
       session.endSession();
     }
@@ -56,33 +65,70 @@ export const createCliente = asyncHandler(
 
 export const updateCliente = asyncHandler(
   async (req: Request, res: Response, next: NextFunction): Promise<any> => {
-    const { _id } = req.params;
-    const { cedula, nombre, apellido, sexo } = req.body;
+    const session: ClientSession = await startSession();
 
-    const cliente = {
-      cedula,
-      nombre,
-      apellido,
-      sexo,
-    };
+    try {
+      session.startTransaction();
+      const { _id } = req.params;
+      const { cedula, nombre, apellido, sexo } = req.body;
 
-    const { data, status } = await axios.put(
-      `${getCoreAPIURL()}/clientes/${_id}`,
-      cliente
-    );
+      const cliente = {
+        cedula,
+        nombre,
+        apellido,
+        sexo,
+      };
 
-    res.status(status).json(data);
+      const { data, status } = await axios.put(
+        `${getCoreAPIURL()}/clientes/${_id}`,
+        cliente
+      );
+
+      await Cliente.updateOne(
+        { _id: data.meta.cliente._id },
+        data.meta.cliente,
+        {
+          session,
+        }
+      );
+
+      await session.commitTransaction();
+
+      res.status(status).json(data);
+    } catch (error) {
+      await session.abortTransaction();
+
+      return errorHandler(error, req, res, next);
+    } finally {
+      session.endSession();
+    }
   }
 );
 
 export const deleteCliente = asyncHandler(
   async (req: Request, res: Response, next: NextFunction): Promise<any> => {
-    const { _id } = req.params;
+    const session: ClientSession = await startSession();
 
-    const { data, status } = await axios.delete(
-      `${getCoreAPIURL()}/clientes/${_id}`
-    );
+    try {
+      session.startTransaction();
 
-    res.status(status).json(data);
+      const { _id } = req.params;
+
+      const { data, status } = await axios.delete(
+        `${getCoreAPIURL()}/clientes/${_id}`
+      );
+
+      await Cliente.deleteOne({ _id }, { session });
+
+      await session.commitTransaction();
+
+      res.status(status).json(data);
+    } catch (error) {
+      await session.abortTransaction();
+
+      return errorHandler(error, req, res, next);
+    } finally {
+      session.endSession();
+    }
   }
 );

@@ -76,13 +76,18 @@ export const createCliente = asyncHandler(
 
       const clienteToCreate = { cedula, nombre, apellido, sexo, telefono };
 
-      await Cliente.create([clienteToCreate], { session });
+      const newCliente: any = await Cliente.create([clienteToCreate], {
+        session,
+      });
 
       await session.commitTransaction();
 
       res.status(201).json({
         exito: true,
         mensaje: "¡Cliente creado satisfactoriamente!",
+        meta: {
+          cliente: newCliente[0],
+        },
       });
     } catch (error) {
       await session.abortTransaction();
@@ -140,6 +145,9 @@ export const updateCliente = asyncHandler(
       res.status(200).json({
         exito: true,
         mensaje: "¡Cliente actualizado satisfactoriamente!",
+        meta: {
+          cliente: { _id, ...clientToUpdt },
+        },
       });
     } catch (error) {
       await session.abortTransaction();

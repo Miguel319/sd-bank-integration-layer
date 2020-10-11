@@ -34,7 +34,9 @@ export const signIn = asyncHandler(
 
       if (!usuario) return validateUserCredentials(req, next, true);
 
-      const cajero = await Cajero.findById(usuario.entidad_asociada);
+      const cajero = await Cajero.findById(usuario.entidad_asociada).session(
+        session
+      );
 
       if (!cajero)
         return next(
@@ -42,18 +44,18 @@ export const signIn = asyncHandler(
         );
 
       const isPasswordRight: boolean = await usuario.matchPassword(contrasenia);
-      
+
       if (!isPasswordRight) return validateCashierCredentials(req, next, true);
 
       await session.commitTransaction();
-      session.endSession();
 
       sendTokenResponse(usuario, 200, res, "sign in", cajero);
     } catch (error) {
       await session.abortTransaction();
-      session.endSession();
 
       return errorHandler(error, req, res, next);
+    } finally {
+      session.endSession();
     }
   }
 );

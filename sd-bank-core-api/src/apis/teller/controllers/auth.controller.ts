@@ -1,12 +1,15 @@
 import { errorHandler } from "./../../../shared/middlewares/error.middleware";
 import { asyncHandler } from "../../../shared/middlewares/async.middleware";
 import { NextFunction, Response, Request } from "express";
-import { sendTokenResponse } from "../../../shared/utils/auth.helpers";
+import {
+  sendTokenResponse,
+  validateUserCredentials,
+} from "../../../shared/utils/auth.helpers";
 import { validateCashierCredentials } from "../utils/cajero.helpers";
 import { ClientSession, startSession } from "mongoose";
-import ErrorResponse from "../../../shared/utils/error-response";
 import Usuario from "../../../shared/models/Usuario";
 import Cajero from "../../../shared/models/Cajero";
+import ErrorResponse from "../../../shared/utils/error-response";
 
 // @desc     Cashier login
 // @route    POST
@@ -17,69 +20,40 @@ export const signIn = asyncHandler(
     res: Response,
     next: NextFunction
   ): Promise<Response | void> => {
-    const { email, contrasenia } = req.body;
-
-    validateCashierCredentials(req, next);
-
-    const cashier = await Usuario.findOne({ email }).select("+contrasenia");
-
-    const isPasswordRight: boolean = await (cashier as any).matchPassword(
-      contrasenia
-    );
-    if (!isPasswordRight) return validateCashierCredentials(req, next, true);
-
-    sendTokenResponse(cashier, 200, res, "sign in");
-  }
-);
-
-// @desc     a new cashier
-// @route    POST
-// @access   public
-export const signUp = asyncHandler(
-  async (
-    req: Request,
-    res: Response,
-    next: NextFunction
-  ): Promise<void | Response> => {
     const session: ClientSession = await startSession();
+    session.startTransaction();
 
     try {
-      session.startTransaction();
+      const { email, contrasenia } = req.body;
 
-      const {
-        cedula,
-        nombre,
-        apellido,
-        email,
-        contrasenia,
-        sucursal,
-      } = req.body;
+      validateCashierCredentials(req, next);
 
-      const cashierFound = await Cajero.findOne({ cedula });
-      if (cashierFound) {
+      const usuario: any = await Usuario.findOne({ email })
+        .select("+contrasenia")
+        .session(session);
+
+      if (!usuario) return validateUserCredentials(req, next, true);
+
+      const cajero = await Cajero.findById(usuario.entidad_asociada);
+
+      if (!cajero)
         return next(
-          new ErrorResponse("Ya existe un cajero con esas credenciales.", 400)
+          new ErrorResponse("Sólo los cajeros pueden iniciar sesión.", 401)
         );
-      }
 
-      const newCashier = await Usuario.create({
-        cedula,
-        nombre,
-        apellido,
-        email,
-        contrasenia,
-        sucursal,
-      });
+      const isPasswordRight: boolean = await usuario.matchPassword(contrasenia);
+      
+      if (!isPasswordRight) return validateCashierCredentials(req, next, true);
 
       await session.commitTransaction();
       session.endSession();
 
-      sendTokenResponse(newCashier, 201, res, "sign up");
-    } catch (err) {
+      sendTokenResponse(usuario, 200, res, "sign in", cajero);
+    } catch (error) {
       await session.abortTransaction();
       session.endSession();
 
-      return errorHandler(err, req, res, next);
+      return errorHandler(error, req, res, next);
     }
   }
 );

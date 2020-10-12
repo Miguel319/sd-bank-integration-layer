@@ -2,25 +2,43 @@ import { Response, Request, NextFunction } from "express";
 import { asyncHandler } from "../../../shared/middlewares/async.middleware";
 import { notFound } from "../../../shared/utils/err.helpers";
 import Perfil from "../../../shared/models/Perfil";
+import { errorHandler } from "../../../shared/middlewares/error.middleware";
+import { ClientSession, startSession } from "mongoose";
+import Usuario from "../../../shared/models/Usuario";
+import ErrorResponse from "../../../shared/utils/error-response";
 
 // @desc   Create perfil
 // @route  POST /api/v1/perfiles
 // @access Private
 export const createPerfil = asyncHandler(
   async (req: Request, res: Response, next: NextFunction) => {
-    const { rol, descripcion } = req.body;
+    const session: ClientSession = await startSession();
 
-    const perfilACrear = {
-      rol,
-      descripcion,
-    };
+    try {
+      session.startTransaction();
+      const { rol, descripcion, tipo_entidad_asociada } = req.body;
 
-    await Perfil.create(perfilACrear);
+      const perfilACrear = {
+        rol,
+        descripcion,
+        tipo_entidad_asociada,
+      };
 
-    res.status(201).json({
-      exito: true,
-      mensaje: "¡Perfil agregado satisfactoriamente!",
-    });
+      await Perfil.create([perfilACrear], { session });
+
+      await session.commitTransaction();
+
+      res.status(201).json({
+        exito: true,
+        mensaje: "¡Perfil agregado satisfactoriamente!",
+      });
+    } catch (error) {
+      await session.abortTransaction();
+
+      return errorHandler(error, req, res, next);
+    } finally {
+      session.endSession();
+    }
   }
 );
 
@@ -55,21 +73,38 @@ export const getPerfilPorId = asyncHandler(
 // @access Private
 export const updatePerfil = asyncHandler(
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-    const { _id } = req.params;
-    const { descripcion, rol } = req.body;
+    const session: ClientSession = await startSession();
+    session.startTransaction();
 
-    const perfilEncontrado = await Perfil.findById(_id);
+    try {
+      const { _id } = req.params;
+      const { descripcion, rol } = req.body;
 
-    if (!perfilEncontrado) return notFound({ entity: "Perfil", next });
+      const perfilEncontrado: any = await Perfil.findById(_id).session(session);
 
-    const perfilActualizado = { descripcion, rol };
+      if (!perfilEncontrado) return notFound({ entity: "Perfil", next });
 
-    await Perfil.updateOne(perfilEncontrado, perfilActualizado);
+      const perfilActualizado = {
+        descripcion: descripcion || perfilEncontrado.descripcion,
+        rol: rol || perfilEncontrado.rol,
+        tipo_entidad_asociada: perfilEncontrado.tipo_entidad_asociada,
+      };
 
-    res.status(200).json({
-      exito: true,
-      mensaje: "¡Perfil actualizado satisfactoriamente!",
-    });
+      await Perfil.updateOne(perfilEncontrado, perfilActualizado, { session });
+
+      await session.commitTransaction();
+
+      res.status(200).json({
+        exito: true,
+        mensaje: "¡Perfil actualizado satisfactoriamente!",
+      });
+    } catch (error) {
+      await session.abortTransaction();
+
+      return errorHandler(error, req, res, next);
+    } finally {
+      session.endSession();
+    }
   }
 );
 
@@ -78,17 +113,42 @@ export const updatePerfil = asyncHandler(
 // @access Private
 export const deletePerfil = asyncHandler(
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-    const { _id } = req.params;
+    const session: ClientSession = await startSession();
+    session.startTransaction();
 
-    const perfilEncontrado = await Perfil.findById(_id);
+    try {
+      const { _id } = req.params;
 
-    if (!perfilEncontrado) return notFound({ entity: "Perfil", next });
+      const perfilEncontrado = await Perfil.findById(_id).session(session);
 
-    await Perfil.deleteOne(perfilEncontrado);
+      if (!perfilEncontrado) return notFound({ entity: "Perfil", next });
 
-    res.status(200).json({
-      exito: true,
-      mensaje: "¡Perfil eliminado satisfactoriamente!",
-    });
+      const usuariosAsociados: any = await Usuario.find({
+        perfil: perfilEncontrado._id,
+      }).session(session);
+
+      if (usuariosAsociados.length > 0)
+        return next(
+          new ErrorResponse(
+            "No puede eliminar este perfil porque tiene usuarios asociados.",
+            400
+          )
+        );
+
+      await Perfil.deleteOne(perfilEncontrado, { session });
+
+      await session.commitTransaction();
+
+      res.status(200).json({
+        exito: true,
+        mensaje: "¡Perfil eliminado satisfactoriamente!",
+      });
+    } catch (error) {
+      await session.abortTransaction();
+
+      return errorHandler(error, req, res, next);
+    } finally {
+      session.endSession();
+    }
   }
 );

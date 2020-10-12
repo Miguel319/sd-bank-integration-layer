@@ -1,6 +1,6 @@
 import { Response, Request, NextFunction } from "express";
 import { asyncHandler } from "../../../shared/middlewares/async.middleware";
-import Cliente from "../../../shared/models/Cliente";
+import Perfil from "../../../shared/models/Perfil";
 import Usuario from "../../../shared/models/Usuario";
 import {
   sendTokenResponse,
@@ -8,6 +8,10 @@ import {
 } from "../../../shared/utils/auth.helpers";
 import { notFound } from "../../../shared/utils/err.helpers";
 import ErrorResponse from "../../../shared/utils/error-response";
+import { validateRegistration } from "../../../shared/utils/auth.helpers";
+import Admin from "../../../shared/models/Admin";
+import { Types, ClientSession, startSession } from "mongoose";
+import { errorHandler } from "../../../shared/middlewares/error.middleware";
 
 // @desc   Register user
 // @route  POST /api/v1/auth/signup
@@ -18,48 +22,87 @@ export const signup = asyncHandler(
     res: Response,
     next: NextFunction
   ): Promise<void | Response> => {
-    const {
-      cedula,
-      email,
-      contrasenia,
-      tipo_entidad_asociada,
-      perfil,
-    } = req.body;
+    const session: ClientSession = await startSession();
+    session.startTransaction();
 
-    // Check if there's already a user with that email
-    const userFound = await Usuario.findOne({ email });
+    try {
+      const {
+        cedula,
+        email,
+        contrasenia,
+        tipo_entidad_asociada,
+        perfil,
+      } = req.body;
 
-    if (userFound)
-      return next(
-        new ErrorResponse("El correo electrónico provisto ya está tomado.", 400)
-      );
+      const invalidFields: string = validateRegistration(req);
 
-    let cliente: any = undefined;
+      if (invalidFields) return next(new ErrorResponse(invalidFields, 400));
 
-    if (tipo_entidad_asociada === "Cliente") {
-      cliente = await Cliente.findOne({ cedula });
+      // Check if there's already a user with that email
+      const userFound = await Usuario.findOne({ email }).session(session);
 
-      if (!cliente)
+      if (userFound)
+        return next(
+          new ErrorResponse(
+            "El correo electrónico provisto ya está tomado.",
+            400
+          )
+        );
+
+      if (tipo_entidad_asociada !== "Admin")
+        return next(
+          new ErrorResponse("Debe proveer 'Admin' como entidad asociada.", 400)
+        );
+
+      const admin: any = await Admin.findOne({ cedula }).session(session);
+
+      if (!admin)
         return notFound({
-          message: "No se encontró ningún cliente con la cédula provista.",
+          message:
+            "No se encontró ningún administrador con la cédula provista.",
           next,
         });
+
+      const usuarioRegistrado = await Usuario.findOne({
+        entidad_asociada: admin._id,
+      }).session(session);
+
+      if (usuarioRegistrado) {
+        return next(
+          new ErrorResponse("Usted ya posee una cuenta de administrador.", 400)
+        );
+      }
+
+      const perfilFound = await Perfil.findOne({ rol: perfil }).session(
+        session
+      );
+
+      if (!perfilFound)
+        return notFound({ message: "El perfil provisto es inválido.", next });
+
+      const userToCreate = {
+        email,
+        contrasenia,
+        tipo_entidad_asociada,
+        entidad_asociada: admin._id as Types.ObjectId,
+        perfil: perfilFound._id as Types.ObjectId,
+      };
+
+      const newUser: any = await Usuario.create([userToCreate], { session });
+
+      admin.usuario = newUser[0]._id;
+      await admin.save();
+
+      await session.commitTransaction();
+
+      sendTokenResponse(newUser[0], 201, res, "sign up", admin);
+    } catch (error) {
+      await session.abortTransaction();
+
+      return errorHandler(error, req, res, next);
+    } finally {
+      session.endSession();
     }
-
-    const newUser: any = await Usuario.create({
-      email,
-      contrasenia,
-      tipo_entidad_asociada,
-      entidad_asociada: cliente._id || undefined,
-      perfil,
-    });
-
-    if (cliente) {
-      cliente.usuario = newUser._id;
-      await cliente.save();
-    }
-
-    sendTokenResponse(newUser, 201, res, "sign up");
   }
 );
 
@@ -77,17 +120,25 @@ export const signin = asyncHandler(
     validateUserCredentials(req, next);
 
     // Check for user by its email
-    const user = await Usuario.findOne({ email }).select("+contrasenia");
+    const user: any = await Usuario.findOne({ email }).select("+contrasenia");
 
     if (!user) return validateUserCredentials(req, next, true);
 
-    const isPasswordRight: boolean = await (user as any).matchPassword(
-      contrasenia
-    );
+    const admin = await Admin.findById(user.entidad_asociada);
+
+    if (!admin)
+      return next(
+        new ErrorResponse(
+          "Sólo los administradores pueden iniciar sesión.",
+          401
+        )
+      );
+
+    const isPasswordRight: boolean = await user.matchPassword(contrasenia);
 
     if (!isPasswordRight) return validateUserCredentials(req, next, true);
 
-    sendTokenResponse(user, 200, res, "sign in");
+    sendTokenResponse(user, 200, res, "sign in", admin);
   }
 );
 
@@ -173,25 +224,5 @@ export const forgotPassword = asyncHandler(
     console.log(resetToken);
 
     res.status(200).json(user);
-  }
-);
-
-// @desc     Delete user
-// @route    POST api/v1/auth/
-// @access   Private --> Only admins
-export const deleteUsuario = asyncHandler(
-  async (req: Request, res: Response, next: NextFunction): Promise<any> => {
-    const { _id } = req.params;
-
-    const user = await Usuario.findById(_id);
-
-    if (!user) return notFound({ entity: "Usuario", next });
-
-    await Usuario.deleteOne(user);
-
-    res.status(200).json({
-      exito: true,
-      mensaje: "¡Usuario eliminado satisfactoriamente!",
-    });
   }
 );

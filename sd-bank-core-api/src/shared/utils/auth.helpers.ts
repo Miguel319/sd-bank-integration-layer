@@ -25,12 +25,34 @@ export const validateUserCredentials = (
     );
 };
 
+export const validateRegistration = (req: Request) => {
+  const { cedula, tipo_entidad_asociada, perfil } = req.body;
+
+  const body: any = { cedula, tipo_entidad_asociada, perfil };
+
+  const errList = [];
+
+  for (let elem in body) {
+    if (!body[elem])
+      errList.push(
+        `Debe proveer el campo '${elem}' en el cuerpo de la petición. `
+      );
+  }
+
+  const errorsToStr: string = errList.join("");
+
+  return errorsToStr.length > 0
+    ? errorsToStr.slice(0, errorsToStr.length - 1)
+    : "";
+};
+
 // Get token from model, create cookie and send response
 export const sendTokenResponse = (
   user: any,
   statusCode: number,
   res: Response,
-  operacion: string
+  operacion: string,
+  entidad?: any
 ) => {
   // Create token
   const token: string = user.getSignedJwtToken();
@@ -45,8 +67,14 @@ export const sendTokenResponse = (
     .json({
       exito: true,
       mensaje: `${
-        operacion === "sign up" ? "¡Cuenta creada" : "¡Sesión iniciada"
+        operacion === "sign up"
+          ? "¡Cuenta creada"
+          : operacion === "update"
+          ? "!Cuenta actualizada"
+          : "¡Sesión iniciada"
       } exitosamente!`,
+      email: user.email,
       token,
+      entidad,
     });
 };

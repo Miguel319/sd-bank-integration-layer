@@ -10,8 +10,8 @@ import {
 const authRouter: Router = Router();
 
 authRouter.get("/current-user", protect, currentUser);
-authRouter.post("/sign-in", signin);
-authRouter.post("/sign-up", signup);
+authRouter.post("/signin", signin);
+authRouter.post("/signup", signup);
 authRouter.post("/forgot-password", forgotPassword);
 
 export default authRouter;

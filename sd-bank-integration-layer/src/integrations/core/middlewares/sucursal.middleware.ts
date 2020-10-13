@@ -7,191 +7,240 @@ import { errorHandler } from "../../../shared/middlewares/error.middleware";
 import { notFound } from "../../../shared/utils/err.helpers";
 import { getSucursalFieldsToUpdt } from "../utils/sucursal.helpers";
 import Cajero from "../../../shared/models/Cajero";
+import { Estado } from "../../../shared/utils/estado";
 
-export const createSucursal = asyncHandler(
+const createSucursal = asyncHandler(
   async (
     req: Request,
     res: Response,
     next: NextFunction
   ): Promise<void | Response> => {
-    const session: ClientSession = await startSession();
+    const estado = Estado.getInstance();
 
-    try {
-      session.startTransaction();
-      const { nombre, ciudad, calle, numero, codigo_postal } = req.body;
+    if (estado.getArriba()) {
+      next();
+    } else {
+      const session: ClientSession = await startSession();
 
-      const sucursalACrear = {
-        nombre,
-        ciudad,
-        calle,
-        numero,
-        codigo_postal,
-      };
+      try {
+        session.startTransaction();
+        const { nombre, ciudad, calle, numero, codigo_postal } = req.body;
 
-      await Sucursal.create([sucursalACrear], { session });
+        const sucursalACrear = {
+          nombre,
+          ciudad,
+          calle,
+          numero,
+          codigo_postal,
+        };
 
-      await session.commitTransaction();
-      session.endSession();
+        await Sucursal.create([sucursalACrear], { session });
 
-      res.status(200).json({
-        exito: true,
-        mensaje: "¡Sucursal creada satisfactoriamente!",
-      });
-    } catch (err) {
-      await session.abortTransaction();
-      session.endSession();
+        await session.commitTransaction();
+        session.endSession();
 
-      return errorHandler(err, req, res, next);
+        res.status(200).json({
+          exito: true,
+          mensaje: "¡Sucursal creada satisfactoriamente!",
+        });
+      } catch (err) {
+        await session.abortTransaction();
+        session.endSession();
+
+        return errorHandler(err, req, res, next);
+      }
     }
   }
 );
 
-export const getCajerosFromSucursal = asyncHandler(
+const getCajerosFromSucursal = asyncHandler(
   async (
     req: Request,
     res: Response,
     next: NextFunction
   ): Promise<void | Response> => {
-    const { _id } = req.params;
+    const estado = Estado.getInstance();
 
-    const cajeros = await Cajero.find({ sucursal: _id });
-
-    res.status(200).json(cajeros);
-  }
-);
-
-export const getSucursalById = asyncHandler(
-  async (
-    req: Request,
-    res: Response,
-    next: NextFunction
-  ): Promise<void | Response> => {
-    const { _id } = req.params;
-
-    const sucursal = await Sucursal.findById(_id);
-
-    res.status(200).json(sucursal);
-  }
-);
-
-export const getAllSucursales = asyncHandler(
-  async (
-    req: Request,
-    res: Response,
-    next: NextFunction
-  ): Promise<void | Response> => {
-    const sucursales = await Sucursal.find({});
-
-    res.status(200).json(sucursales);
-  }
-);
-
-export const updateSucursal = asyncHandler(
-  async (
-    req: Request,
-    res: Response,
-    next: NextFunction
-  ): Promise<void | Response> => {
-    const session: ClientSession = await startSession();
-
-    try {
-      session.startTransaction();
+    if (estado.getArriba()) {
+      next();
+    } else {
       const { _id } = req.params;
 
-      const { nombre, ciudad, calle, numero, codigo_postal } = req.body;
+      const cajeros = await Cajero.find({ sucursal: _id });
 
-      const areFieldsValid = getSucursalFieldsToUpdt(req);
-
-      if (!areFieldsValid)
-        return next(
-          new ErrorResponse(
-            "Debe proveer al menos un campo para realizar la actualización.",
-            400
-          )
-        );
-
-      const sucursalFound: any = await Sucursal.findById(_id).session(session);
-
-      if (!sucursalFound) {
-        return notFound({
-          message: "No se halló ninguna sucursal con el _id provisto.",
-          next,
-        });
-      }
-
-      const newFields = {
-        nombre: nombre || sucursalFound.nombre,
-        ciudad: ciudad || sucursalFound.ciudad,
-        calle: calle || sucursalFound.calle,
-        numero: numero || sucursalFound.numero,
-        codigo_postal: codigo_postal || sucursalFound.codigo_postal,
-      };
-
-      await Sucursal.updateOne(sucursalFound, newFields, {
-        session,
-      });
-
-      await sucursalFound.save();
-
-      await session.commitTransaction();
-      session.endSession();
-
-      res.status(200).json({
-        exito: true,
-        mensaje: "Sucursal actualizada satisfactoriamente.",
-      });
-    } catch (error) {
-      await session.abortTransaction();
-      session.endSession();
-
-      return errorHandler(error, req, res, next);
+      res.status(200).json(cajeros);
     }
   }
 );
 
-export const deleteSucursal = asyncHandler(
+const getSucursalById = asyncHandler(
   async (
     req: Request,
     res: Response,
     next: NextFunction
   ): Promise<void | Response> => {
-    const session: ClientSession = await startSession();
+    const estado = Estado.getInstance();
 
-    try {
-      session.startTransaction();
+    if (estado.getArriba()) {
+      next();
+    } else {
       const { _id } = req.params;
 
-      const sucursal: any = await Sucursal.findById(_id).session(session);
+      const sucursal = await Sucursal.findById(_id);
 
-      if (!sucursal) {
-        return notFound({
-          message: "No se encontró ninguna sucursal con el _id provisto.",
-          next,
-        });
-      }
-
-      if (sucursal.cajeros.length > 0)
-        return next(
-          new ErrorResponse(
-            "No puede eliminar la sucursal porque tiene cajeros asociados.",
-            400
-          )
-        );
-
-      await Sucursal.deleteOne({ _id: sucursal._id }, { session });
-
-      await session.commitTransaction();
-      session.endSession();
-
-      res.status(200).json({
-        exito: true,
-        mensaje: "!Sucursal eliminada satisfactoriamente!",
-      });
-    } catch (error) {
-      await session.abortTransaction();
-      session.endSession();
-
-      return errorHandler(error, req, res, next);
+      res.status(200).json(sucursal);
     }
   }
 );
+
+const getAllSucursales = asyncHandler(
+  async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void | Response> => {
+    const estado = Estado.getInstance();
+
+    if (estado.getArriba()) {
+      next();
+    } else {
+      const sucursales = await Sucursal.find({});
+
+      res.status(200).json(sucursales);
+    }
+  }
+);
+
+const updateSucursal = asyncHandler(
+  async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void | Response> => {
+    const estado = Estado.getInstance();
+
+    if (estado.getArriba()) {
+      next();
+    } else {
+      const session: ClientSession = await startSession();
+
+      try {
+        session.startTransaction();
+        const { _id } = req.params;
+
+        const { nombre, ciudad, calle, numero, codigo_postal } = req.body;
+
+        const areFieldsValid = getSucursalFieldsToUpdt(req);
+
+        if (!areFieldsValid)
+          return next(
+            new ErrorResponse(
+              "Debe proveer al menos un campo para realizar la actualización.",
+              400
+            )
+          );
+
+        const sucursalFound: any = await Sucursal.findById(_id).session(
+          session
+        );
+
+        if (!sucursalFound) {
+          return notFound({
+            message: "No se halló ninguna sucursal con el _id provisto.",
+            next,
+          });
+        }
+
+        const newFields = {
+          nombre: nombre || sucursalFound.nombre,
+          ciudad: ciudad || sucursalFound.ciudad,
+          calle: calle || sucursalFound.calle,
+          numero: numero || sucursalFound.numero,
+          codigo_postal: codigo_postal || sucursalFound.codigo_postal,
+        };
+
+        await Sucursal.updateOne(sucursalFound, newFields, {
+          session,
+        });
+
+        await sucursalFound.save();
+
+        await session.commitTransaction();
+        session.endSession();
+
+        res.status(200).json({
+          exito: true,
+          mensaje: "Sucursal actualizada satisfactoriamente.",
+        });
+      } catch (error) {
+        await session.abortTransaction();
+        session.endSession();
+
+        return errorHandler(error, req, res, next);
+      }
+    }
+  }
+);
+
+const deleteSucursal = asyncHandler(
+  async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void | Response> => {
+    const estado = Estado.getInstance();
+
+    if (estado.getArriba()) {
+      next();
+    } else {
+      const session: ClientSession = await startSession();
+
+      try {
+        session.startTransaction();
+        const { _id } = req.params;
+
+        const sucursal: any = await Sucursal.findById(_id).session(session);
+
+        if (!sucursal) {
+          return notFound({
+            message: "No se encontró ninguna sucursal con el _id provisto.",
+            next,
+          });
+        }
+
+        if (sucursal.cajeros.length > 0)
+          return next(
+            new ErrorResponse(
+              "No puede eliminar la sucursal porque tiene cajeros asociados.",
+              400
+            )
+          );
+
+        await Sucursal.deleteOne({ _id: sucursal._id }, { session });
+
+        await session.commitTransaction();
+        session.endSession();
+
+        res.status(200).json({
+          exito: true,
+          mensaje: "!Sucursal eliminada satisfactoriamente!",
+        });
+      } catch (error) {
+        await session.abortTransaction();
+        session.endSession();
+
+        return errorHandler(error, req, res, next);
+      }
+    }
+  }
+);
+
+const sucursalMiddleware = {
+  getSucursalById,
+  createSucursal,
+  getAllSucursales,
+  updateSucursal,
+  deleteSucursal,
+};
+
+export default sucursalMiddleware;

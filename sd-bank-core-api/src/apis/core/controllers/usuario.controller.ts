@@ -2,13 +2,9 @@ import { Response, Request, NextFunction } from "express";
 import { asyncHandler } from "../../../shared/middlewares/async.middleware";
 import Perfil from "../../../shared/models/Perfil";
 import Usuario from "../../../shared/models/Usuario";
-import {
-  sendTokenResponse,
-  validateUserCredentials,
-} from "../../../shared/utils/auth.helpers";
+import { sendTokenResponse } from "../../../shared/utils/auth.helpers";
 import { notFound } from "../../../shared/utils/err.helpers";
 import ErrorResponse from "../../../shared/utils/error-response";
-import { validateRegistration } from "../../../shared/utils/auth.helpers";
 import Admin from "../../../shared/models/Admin";
 import { Types, ClientSession, startSession } from "mongoose";
 import { errorHandler } from "../../../shared/middlewares/error.middleware";

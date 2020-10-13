@@ -69,8 +69,6 @@ export const conectarSistema = asyncHandler(
 
       await Cola.deleteMany({});
 
-      const estado = Estado.getInstance();
-
       res.status(200).json({
         exito: true,
         mensaje: "¡Se ha reestablecido la comunicación con el sistema central!",

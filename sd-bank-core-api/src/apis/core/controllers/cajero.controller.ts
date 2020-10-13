@@ -98,6 +98,7 @@ export const getCajeroById = asyncHandler(
     res.status(200).json(cajero);
   }
 );
+
 export const getCajeroByCedula = asyncHandler(
   async (
     req: Request,

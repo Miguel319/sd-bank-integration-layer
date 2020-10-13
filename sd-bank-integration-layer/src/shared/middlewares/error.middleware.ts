@@ -49,18 +49,22 @@ export const errorHandler = async (
   if (err.name === "JsonWebTokenError")
     error = new ErrorResponse("No está autorizado a acceder a esta ruta.", 401);
 
-  const firstProp: any = Object.keys(err)[0];
-
-  console.log();
-
-  const errRes = !err._message
+  const errRes = err.isAxiosError
     ? err.response.data
     : {
         exito: false,
         error: error.message,
       };
 
-  const statusCode: number = err._message ? 500 : err.response.status;
+  console.log(err);
 
-  res.status(statusCode || 500).json(errRes);
+  res
+    .status(
+      error.statusCode
+        ? error.statusCode
+        : err.response.status
+        ? err.response.status
+        : 500
+    )
+    .json(errRes);
 };

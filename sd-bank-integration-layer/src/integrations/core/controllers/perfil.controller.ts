@@ -11,7 +11,7 @@ export const getPerfiles = asyncHandler(
   }
 );
 
-export const getPerfilesById = asyncHandler(
+export const getPerfilById = asyncHandler(
   async (req: Request, res: Response, next: NextFunction): Promise<any> => {
     const { _id } = req.params;
 
@@ -23,14 +23,15 @@ export const getPerfilesById = asyncHandler(
   }
 );
 
-export const createPerfiles = asyncHandler(
+export const createPerfil = asyncHandler(
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const { rol, descripcion } = req.body;
+      const { rol, descripcion, tipo_entidad_asociada } = req.body;
 
       const perfilACrear = {
         rol,
         descripcion,
+        tipo_entidad_asociada,
       };
 
       const { data } = await axios.post(
@@ -48,11 +49,12 @@ export const createPerfiles = asyncHandler(
 export const updatePerfil = asyncHandler(
   async (req: Request, res: Response, next: NextFunction): Promise<any> => {
     const { _id } = req.params;
-    const { rol, descripcion } = req.body;
+    const { rol, descripcion, tipo_entidad_asociada } = req.body;
 
     const perfil = {
       rol,
       descripcion,
+      tipo_entidad_asociada,
     };
 
     const { data } = await axios.put(

@@ -109,7 +109,7 @@ export const updatePrestamo = asyncHandler(
       session.startTransaction();
 
       const { _id } = req.params;
-      const { descripcion } = req.params;
+      const { descripcion } = req.body;
 
       if (!descripcion)
         return next(

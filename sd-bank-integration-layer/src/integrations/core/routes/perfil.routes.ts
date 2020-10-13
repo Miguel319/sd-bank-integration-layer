@@ -1,14 +1,25 @@
+import { processCola } from "./../middlewares/cola.middleware";
 import {
   getPerfiles,
-  createPerfiles,
-  getPerfilesById,
+  createPerfil,
+  getPerfilById,
   updatePerfil,
+  deletePerfil,
 } from "./../controllers/perfil.controller";
 import { Router } from "express";
+import perfilMiddleware from "../middlewares/perfil.middleware";
 
-const prestamoRouter: Router = Router();
+const perfilRouter: Router = Router();
 
-prestamoRouter.route("").get(getPerfiles).post(createPerfiles);
-prestamoRouter.route("/:_id").get(getPerfilesById).put(updatePerfil);
+perfilRouter
+  .route("")
+  .get(perfilMiddleware.getPerfiles, processCola, getPerfiles)
+  .post(perfilMiddleware.createPerfil, processCola, createPerfil);
 
-export default prestamoRouter;
+perfilRouter
+  .route("/:_id")
+  .get(perfilMiddleware.getPerfilPorId, processCola, getPerfilById)
+  .put(perfilMiddleware.updatePerfil, processCola, updatePerfil)
+  .delete(perfilMiddleware.deletePerfil, processCola, deletePerfil);
+
+export default perfilRouter;

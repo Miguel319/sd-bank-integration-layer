@@ -25,6 +25,11 @@ const ClienteSchema = new Schema(
       required: [true, "Debe especificar el 'sexo': Femenino o Masculino."],
       enum: ["Femenino", "Masculino"],
     },
+    telefono: {
+      type: String,
+      min: [10, "El número telefónico debe tener 10 caracteres."],
+      max: [10, "El número telefónico debe tener 10 caracteres."],
+    },
     usuario: {
       type: ObjectId,
       ref: "Usuario",

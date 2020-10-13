@@ -76,13 +76,16 @@ export const createAdmin = asyncHandler(
 
       const adminToCreate = { cedula, nombre, apellido, sexo };
 
-      await Admin.create([adminToCreate], { session });
+      const newAdmin: any = await Admin.create([adminToCreate], { session });
 
       await session.commitTransaction();
 
       res.status(201).json({
         exito: true,
         mensaje: "¡Admin creado satisfactoriamente!",
+        meta: {
+          admin: newAdmin[0]
+        }
       });
     } catch (error) {
       await session.abortTransaction();

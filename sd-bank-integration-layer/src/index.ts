@@ -7,10 +7,16 @@ import dotenv from "dotenv";
 import mongoose from "mongoose";
 import setupRoutes from "./routes/index.routes";
 import { errorHandler } from "./shared/middlewares/error.middleware";
+import { Estado } from "./shared/utils/estado";
 
 const app = express();
 app.use(cors());
 dotenv.config();
+
+// Initialize estado as "arriba"
+const estado = Estado.getInstance();
+
+// estado.setArriba(false);
 
 // Mongosose configuration
 mongoose

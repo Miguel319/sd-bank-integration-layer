@@ -26,13 +26,13 @@ export const getPrestamoById = asyncHandler(
 export const createPrestamo = asyncHandler(
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const { descripcion, cantidad_total, usuario_id } = req.body;
+      const { descripcion, cantidad_total, cliente_id } = req.body;
 
       const newPrestamo = {
         descripcion,
         cantidad_total,
         remaining: Number(cantidad_total),
-        usuario_id,
+        cliente_id,
       };
 
       const { data } = await axios.post(

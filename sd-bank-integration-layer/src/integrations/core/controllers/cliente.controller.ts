@@ -3,11 +3,13 @@ import axios from "axios";
 import { Request, Response, NextFunction } from "express";
 import { startSession, ClientSession } from "mongoose";
 import { getCoreAPIURL } from "../../../shared/utils/constants";
-import { errorHandler } from "../../../../../sd-bank-core-api/src/shared/middlewares/error.middleware";
 import Cliente from "../../../shared/models/Cliente";
+import Usuario from "../../../shared/models/Usuario";
+import { errorHandler } from "../../../shared/middlewares/error.middleware";
 
 export const getClientes = asyncHandler(
   async (req: Request, res: Response, next: NextFunction): Promise<any> => {
+    
     const { data } = await axios.get(`${getCoreAPIURL()}/clientes`);
 
     res.status(200).json(data);
@@ -117,6 +119,14 @@ export const deleteCliente = asyncHandler(
       const { data, status } = await axios.delete(
         `${getCoreAPIURL()}/clientes/${_id}`
       );
+
+      const clienteEncontrado: any = await Cliente.findById(_id);
+
+      if (clienteEncontrado.usuario)
+        await Usuario.deleteOne(
+          { _id: clienteEncontrado.usuario },
+          { session }
+        );
 
       await Cliente.deleteOne({ _id }, { session });
 

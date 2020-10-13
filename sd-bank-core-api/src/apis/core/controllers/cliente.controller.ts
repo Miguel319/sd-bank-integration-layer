@@ -62,7 +62,7 @@ export const createCliente = asyncHandler(
     try {
       session.startTransaction();
 
-      const { cedula, nombre, apellido, sexo, telefono } = req.body;
+      const { cedula, nombre, apellido, sexo, telefono, cuerpo } = req.body;
 
       const clienteFound = await Cliente.findOne({ cedula }).session(session);
 
@@ -74,7 +74,13 @@ export const createCliente = asyncHandler(
           )
         );
 
-      const clienteToCreate = { cedula, nombre, apellido, sexo, telefono };
+      const clienteToCreate = cuerpo || {
+        cedula,
+        nombre,
+        apellido,
+        sexo,
+        telefono,
+      };
 
       const newCliente: any = await Cliente.create([clienteToCreate], {
         session,

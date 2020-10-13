@@ -45,30 +45,48 @@ export const createCuenta = asyncHandler(
     res: Response,
     next: NextFunction
   ): Promise<void | Response> => {
-    const { tipo_de_cuenta, numero_de_cuenta, cliente_id } = req.body;
+    const session: ClientSession = await startSession();
 
-    const clienteFound: any = await Cliente.findById(cliente_id);
+    try {
+      session.startTransaction();
 
-    if (!clienteFound) return notFound({ entity: "Cliente", next });
+      const { tipo_de_cuenta, numero_de_cuenta, cliente_id } = req.body;
 
-    const cuentaToCreate = {
-      tipo_de_cuenta,
-      numero_de_cuenta,
-      cliente: cliente_id,
-    };
+      const clienteFound: any = await Cliente.findById(cliente_id);
 
-    const cuentaCreated: any = await Cuenta.create(cuentaToCreate);
+      if (!clienteFound) return notFound({ entity: "Cliente", next });
 
-    console.log(clienteFound);
+      const cuentaToCreate = {
+        tipo_de_cuenta,
+        numero_de_cuenta,
+        cliente: cliente_id,
+      };
 
-    clienteFound.cuentas_bancarias.push(cuentaCreated._id);
+      const cuentaCreated: any = await Cuenta.create([cuentaToCreate], {
+        session,
+      });
 
-    await clienteFound.save();
+      clienteFound.cuentas_bancarias.push(cuentaCreated[0]._id);
 
-    res.status(201).json({
-      exito: true,
-      mensaje: "¡Cuenta creada satisfactoriamente!",
-    });
+      await clienteFound.save();
+
+      await session.commitTransaction();
+
+      res.status(201).json({
+        exito: true,
+        mensaje: "¡Cuenta creada satisfactoriamente!",
+        meta: {
+          cliente_id: clienteFound._id,
+          cuenta: cuentaCreated[0],
+        },
+      });
+    } catch (error) {
+      await session.abortTransaction();
+
+      return errorHandler(error, req, res, next);
+    } finally {
+      session.endSession();
+    }
   }
 );
 
@@ -86,8 +104,9 @@ export const updateCuenta = asyncHandler(
 
     try {
       const { _id } = req.params;
+      const { tipo_de_cuenta, numero_de_cuenta } = req.body;
 
-      const cuenta = await Cuenta.findById(_id);
+      const cuenta: any = await Cuenta.findById(_id);
 
       if (!cuenta) return notFound({ entity: "Cuenta", next });
 
@@ -98,11 +117,28 @@ export const updateCuenta = asyncHandler(
           new ErrorResponse("Debe proveer al menos un campo a actualizar.", 400)
         );
 
+      const cuentaAActualizar = {
+        tipo_de_cuenta: tipo_de_cuenta || cuenta.tipo_de_cuenta,
+        numero_de_cuenta: numero_de_cuenta || cuenta.numero_de_cuenta,
+      };
+
+      const cuentaCopy = { ...cuenta };
+      delete cuentaCopy._id;
+
+      await Cuenta.updateOne(
+        { _id },
+        { ...cuentaCopy, ...cuentaAActualizar },
+        { session }
+      );
+
       await session.commitTransaction();
 
       res.status(201).json({
         exito: true,
         mensaje: "¡Cuenta actualizada satisfactoriamente!",
+        meta: {
+          cuenta: { ...cuentaCopy, ...cuentaAActualizar },
+        },
       });
     } catch (error) {
       await session.abortTransaction();

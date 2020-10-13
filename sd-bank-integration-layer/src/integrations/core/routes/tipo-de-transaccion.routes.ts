@@ -6,18 +6,34 @@ import {
   deleteTipoDeTransaccion,
 } from "./../controllers/tipo-de-transaccion.controller";
 import { Router } from "express";
+import tipoDeTransaccionMiddleware from "../middlewares/tipo-de-transaccion.middleware";
 
 const tipoTransaccion: Router = Router();
 
 tipoTransaccion
   .route("")
-  .get(getAllTiposDeTransaccion)
-  .post(createTipoDeTransaccion);
+  .get(
+    tipoDeTransaccionMiddleware.getAllTiposDeTransaccion,
+    getAllTiposDeTransaccion
+  )
+  .post(
+    tipoDeTransaccionMiddleware.createTipoDeTransaccion,
+    createTipoDeTransaccion
+  );
 
 tipoTransaccion
   .route("/:_id")
-  .get(getTipoDeTransaccionById)
-  .put(updateTipoDeTransaccion)
-  .delete(deleteTipoDeTransaccion);
+  .get(
+    tipoDeTransaccionMiddleware.getTipoDeTransaccionById,
+    getTipoDeTransaccionById
+  )
+  .put(
+    tipoDeTransaccionMiddleware.updateTipoDeTransaccion,
+    updateTipoDeTransaccion
+  )
+  .delete(
+    tipoDeTransaccionMiddleware.deleteTipoDeTransaccion,
+    deleteTipoDeTransaccion
+  );
 
 export default tipoTransaccion;

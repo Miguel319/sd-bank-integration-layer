@@ -53,10 +53,10 @@ const UsuarioSchema = new Schema(
 
 // Encrypt contrasenia using bcryt
 UsuarioSchema.pre("save", async function (next: any) {
-  const thisRef: any = this;
-
+  const thisRef: any = next;
+ 
   if (!thisRef.isModified("contrasenia")) next();
-
+ 
   const salt: any = await bcrypt.genSalt(10);
   thisRef.contrasenia = await bcrypt.hash(thisRef.contrasenia, salt);
 });

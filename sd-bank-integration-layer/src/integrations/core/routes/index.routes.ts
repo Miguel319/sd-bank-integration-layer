@@ -17,7 +17,6 @@ const coreIntegrationRoutes = (app: any): void => {
   app.use(`${BASE_URL}/usuarios`, usuarioRouter);
   app.use(`${BASE_URL}/tipo-de-transaccion`, tipoTransaccion);
   app.use(`${BASE_URL}/sucursales`, sucursalRouter);
-  
   app.use(`${BASE_URL}/admins`,admins);
 };
 

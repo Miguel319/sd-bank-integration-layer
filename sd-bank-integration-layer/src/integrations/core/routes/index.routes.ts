@@ -20,6 +20,7 @@ const coreIntegrationRoutes = (app: any): void => {
   app.use(`${BASE_URL}/sucursales`, sucursalRouter);
   app.use(`${BASE_URL}/admins`,adminsRouter);
   app.use(`${BASE_URL}/cajeros`,cajerosRouter);
+
 };
 
 export default coreIntegrationRoutes;

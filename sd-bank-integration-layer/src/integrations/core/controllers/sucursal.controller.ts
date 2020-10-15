@@ -26,13 +26,10 @@ export const getSucursalesById = asyncHandler(
 
   export const createSucursales = asyncHandler(
     async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-      const session = await startSession();
+      
+      const { nombre, ciudad, calle, numero, codigo_postal } = req.body;
   
-      try {
-        session.startTransaction();
-        const { nombre, ciudad, calle, numero, codigo_postal } = req.body;
-
-      const sucursalACrear = {
+      const sucursalCrear = {
         nombre,
         ciudad,
         calle,
@@ -40,23 +37,27 @@ export const getSucursalesById = asyncHandler(
         codigo_postal,
       };
   
-        const { data } = await axios.post(`${getCoreAPIURL()}/surcusales`, sucursalACrear);
-
+        const { data } = await axios.post(`${getCoreAPIURL()}/sucursales`, sucursalCrear);
   
-        res.status(201).json(data);
-      } catch (error) {
-  
-        res.status(400).json(error.response.data);
-      } 
+        res.status(201).json(data); 
     }
   );
 
   export const updateSucursales = asyncHandler(
     async (req: Request, res: Response, next: NextFunction): Promise<any> => {
       const { _id } = req.params;
-      const { data } = await axios.put(`${getCoreAPIURL()}/sucursales/${_id}`);
+      const { nombre, ciudad, calle, numero, codigo_postal } = req.body;
   
-      res.status(201).json(data);
+      const sucursal = {
+        nombre, ciudad, calle, numero, codigo_postal
+      };
+  
+      const { data, status } = await axios.put(
+        `${getCoreAPIURL()}/sucursales/${_id}`,
+        sucursal
+      );
+  
+      res.status(status).json(data);
     }
   );
 

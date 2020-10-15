@@ -1,5 +1,6 @@
 import { Router } from "express";
 import cajeroMiddleware from "../middlewares/cajero.middleware";
+import { processCola } from '../middlewares/cola.middleware';
 import {
   getCajeroById,
   getAllCajeros,
@@ -15,7 +16,7 @@ const cajeroRouter: Router = Router();
 
 cajeroRouter
   .route("")
-  .get(cajeroMiddleware.getAllCajeros, /*loggerMiddleware, */ getAllCajeros)
+  .get(cajeroMiddleware.getAllCajeros, processCola,/*loggerMiddleware, */ getAllCajeros)
   .post(cajeroMiddleware.createCajero, /*loggerMiddleware,  */ createCajero);
 
 cajeroRouter

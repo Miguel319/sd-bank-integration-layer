@@ -3,10 +3,11 @@
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
+  "type": "commonjs",
   "scripts": {
-    "start": "ts-node-dev --max-old-space-size=4096  --respawn src/index.ts",
-    "dev": "ts-node-dev --max-old-space-size=4096 --respawn  src/index.ts",
-    "build": "tsc",
+    "start": "node dist/index",
+    "dev": "ts-node-dev --respawn src/index",
+    "build": "tsc -p .",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
@@ -52,5 +53,9 @@
     "jsonwebtoken": "^8.5.1",
     "moment": "^2.27.0",
     "mongoose": "^5.9.24"
+  },
+  "engines": {
+    "node": "14.11.0",
+    "npm": "6.14.8"
   }
 }

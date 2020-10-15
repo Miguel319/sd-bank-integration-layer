@@ -14,7 +14,7 @@ app.use(cors());
 dotenv.config();
 
 // Initialize estado as "arriba"
-const estado = Estado.getInstance();
+Estado.getInstance();
 
 // estado.setArriba(false);
 
@@ -39,6 +39,6 @@ setupRoutes(app);
 // Error handler
 app.use(errorHandler);
 
-const PORT = 3001 || process.env.PORT;
+const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => console.log(`Server listening on PORT ${PORT}`));

@@ -9,7 +9,7 @@ import sucursalRouter from "./sucursal.routes";
 import cajeroRouter from "./cajero.routes";
 import usuarioRouter from "./usuario.routes";
 
-export const setupCoreRoutes = (app: any): void => {
+export const coreIntegrationRoutes = (app: any): void => {
   const BASE_URL = "/core-api/v1";
 
   app.use(`${BASE_URL}/auth`, authRouter);

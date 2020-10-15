@@ -1,5 +1,4 @@
 import { Router } from "express";
-import { protect } from "../../../shared/middlewares/auth.middleware";
 import {
   signin,
   signup,

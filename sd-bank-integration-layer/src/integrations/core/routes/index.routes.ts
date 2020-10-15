@@ -7,6 +7,7 @@ import tipoTransaccion from "./tipo-de-transaccion.routes";
 import sucursalRouter from "./sucursal.routes";
 import adminsRouter from "./admin.routes";
 import cajerosRouter from "./cajero.routes";
+import authRouter from "./auth.routes";
 
 const coreIntegrationRoutes = (app: any): void => {
   const BASE_URL: string = "/core-api/v1";
@@ -20,6 +21,7 @@ const coreIntegrationRoutes = (app: any): void => {
   app.use(`${BASE_URL}/sucursales`, sucursalRouter);
   app.use(`${BASE_URL}/admins`,adminsRouter);
   app.use(`${BASE_URL}/cajeros`,cajerosRouter);
+  app.use(`${BASE_URL}/auth`, authRouter);
 
 };
 

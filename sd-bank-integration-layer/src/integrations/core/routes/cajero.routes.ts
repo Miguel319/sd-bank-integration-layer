@@ -27,9 +27,7 @@ import {
   
   cajeroRouter
   .route("/:cedula")
-  .get(getCajeroByCedula)
-  .put(getUsuarioCajero)
-  .delete(deleteCajero);
-  
+  .get(getCajeroByCedula);
+
   export default cajeroRouter;
   

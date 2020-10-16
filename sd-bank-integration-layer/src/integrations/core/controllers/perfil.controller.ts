@@ -25,24 +25,20 @@ export const getPerfilById = asyncHandler(
 
 export const createPerfil = asyncHandler(
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-    try {
-      const { rol, descripcion, tipo_entidad_asociada } = req.body;
+    const { rol, descripcion, tipo_entidad_asociada } = req.body;
 
-      const perfilACrear = {
-        rol,
-        descripcion,
-        tipo_entidad_asociada,
-      };
+    const perfilACrear = {
+      rol,
+      descripcion,
+      tipo_entidad_asociada,
+    };
 
-      const { data } = await axios.post(
-        `${getCoreAPIURL}/perfiles`,
-        perfilACrear
-      );
+    const { data, status } = await axios.post(
+      `${getCoreAPIURL()}/perfiles`,
+      perfilACrear
+    );
 
-      res.status(201).json(data);
-    } catch (error) {
-      res.status(400).json(error.response.data);
-    }
+    res.status(status).json(data);
   }
 );
 

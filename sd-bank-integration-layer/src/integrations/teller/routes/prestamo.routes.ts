@@ -1,4 +1,6 @@
 import { Router } from "express";
+import prestamoMiddleware from "../middlewares/prestamo.middleware";
+import { processCola } from "../../core/middlewares/cola.middleware";
 import {
   processPrestamoPago,
   getPretamosByClienteId,
@@ -6,7 +8,17 @@ import {
 
 const prestamoRouter: Router = Router();
 
-prestamoRouter.get("/cliente/:_id", getPretamosByClienteId);
-prestamoRouter.put("/:_id/pago", processPrestamoPago);
+prestamoRouter.get(
+  "/cliente/:_id",
+  prestamoMiddleware.getPretamosByClienteId,
+  processCola,
+  getPretamosByClienteId
+);
+prestamoRouter.put(
+  "/:_id/pago",
+  prestamoMiddleware.processPrestamoPago,
+  processCola,
+  processPrestamoPago
+);
 
 export default prestamoRouter;

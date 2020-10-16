@@ -34,3 +34,5 @@ export const getClienteByCedula = asyncHandler(
     res.status(status).json(data);
   }
 );
+
+

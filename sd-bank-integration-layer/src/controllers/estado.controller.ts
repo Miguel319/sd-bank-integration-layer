@@ -115,7 +115,11 @@ export const conectarSistema = asyncHandler(
     const peticiones = [...peticionesEnCola];
 
     if (peticiones.length === 0) {
-      next();
+      res.status(200).json({
+        exito: true,
+        mensaje: "¡Se ha reestablecido la comunicación con el sistema central!",
+        arriba: estado.getArriba(),
+      });
     } else {
       handlePeticiones(peticiones);
 
@@ -141,7 +145,11 @@ export const conectarTeller = asyncHandler(
     const peticiones = [...peticionesEnCola];
 
     if (peticiones.length === 0) {
-      next();
+      res.status(200).json({
+        exito: true,
+        mensaje: "¡Se ha reestablecido la comunicación con el sistema central!",
+        arriba: estado.getArriba(),
+      });
     } else {
       handlePeticiones(peticiones);
 
@@ -167,7 +175,11 @@ export const conectarInternetBanking = asyncHandler(
     const peticiones = [...peticionesEnCola];
 
     if (peticiones.length === 0) {
-      next();
+      res.status(200).json({
+        exito: true,
+        mensaje: "¡Se ha reestablecido la comunicación con el sistema central!",
+        arriba: estado.getArriba(),
+      });
     } else {
       handlePeticiones(peticiones);
 

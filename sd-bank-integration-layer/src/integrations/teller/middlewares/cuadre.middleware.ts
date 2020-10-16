@@ -7,100 +7,133 @@ import { ClientSession, startSession } from "mongoose";
 import { errorHandler } from "../../../shared/middlewares/error.middleware";
 import ErrorResponse from "../../../shared/utils/error-response";
 import OperacionCajero from "../../../shared/models/OperacionCajero";
+import { Estado } from "../../../shared/utils/estado";
 
 const getAllCuadres = asyncHandler(
   async (req: Request, res: Response, next: NextFunction): Promise<any> => {
-    const cuadres = await Cuadre.find({});
+    const estado = Estado.getInstance();
 
-    res.status(200).json(cuadres);
+    if (estado.getTellerArriba()) {
+      next();
+    } else {
+      const cuadres = await Cuadre.find({});
+
+      res.status(200).json(cuadres);
+    }
   }
 );
 
 const getCuadreById = asyncHandler(
   async (req: Request, res: Response, next: NextFunction): Promise<any> => {
-    const { _id } = req.params;
+    const estado = Estado.getInstance();
 
-    const cuadre = await Cuadre.findById(_id);
+    if (estado.getTellerArriba()) {
+      next();
+    } else {
+      const { _id } = req.params;
 
-    res.status(200).json(cuadre);
+      const cuadre = await Cuadre.findById(_id);
+
+      res.status(200).json(cuadre);
+    }
   }
 );
 
 const getOperacionesFromCuadreId = asyncHandler(
   async (req: Request, res: Response, next: NextFunction): Promise<any> => {
-    const { _id } = req.params;
+    const estado = Estado.getInstance();
 
-    const operaciones = await OperacionCajero.find({ cuadre: _id });
+    if (estado.getTellerArriba()) {
+      next();
+    } else {
+      const { _id } = req.params;
 
-    res.status(200).json(operaciones);
+      const operaciones = await OperacionCajero.find({ cuadre: _id });
+
+      res.status(200).json(operaciones);
+    }
   }
 );
 
 const getCuadresFromCajeroId = asyncHandler(
   async (req: Request, res: Response, next: NextFunction): Promise<any> => {
-    const { _id } = req.params;
+    const estado = Estado.getInstance();
 
-    const cuadresDeCajero = await Cuadre.find({ cajero: _id });
+    if (estado.getTellerArriba()) {
+      next();
+    } else {
+      const { _id } = req.params;
 
-    res.status(200).json(cuadresDeCajero);
+      const cuadresDeCajero = await Cuadre.find({ cajero: _id });
+
+      res.status(200).json(cuadresDeCajero);
+    }
   }
 );
 
 const createCuadre = asyncHandler(
   async (req: Request, res: Response, next: NextFunction): Promise<any> => {
-    const session: ClientSession = await startSession();
+    const estado = Estado.getInstance();
 
-    try {
-      session.startTransaction();
+    if (estado.getTellerArriba()) {
+      next();
+    } else {
+      const session: ClientSession = await startSession();
 
-      const { _id } = req.params;
-      const { balance_inicial } = req.body;
+      try {
+        session.startTransaction();
 
-      const balanceInicialNum: number = Number(balance_inicial);
+        const { _id } = req.params;
+        const { balance_inicial } = req.body;
 
-      if (!balanceInicialNum || balanceInicialNum < 100000)
-        return next(
-          new ErrorResponse(
-            "El balance inicial debe ser de RD$100,000.00 o más.",
-            400
-          )
+        const balanceInicialNum: number = Number(balance_inicial);
+
+        if (!balanceInicialNum || balanceInicialNum < 100000)
+          return next(
+            new ErrorResponse(
+              "El balance inicial debe ser de RD$100,000.00 o más.",
+              400
+            )
+          );
+
+        const cajeroEcontrado: any = await Cajero.findById(_id).session(
+          session
         );
 
-      const cajeroEcontrado: any = await Cajero.findById(_id).session(session);
+        if (!cajeroEcontrado)
+          return notFound({
+            message: "No se halló ningún cajero con el _id provisto.",
+            next,
+          });
 
-      if (!cajeroEcontrado)
-        return notFound({
-          message: "No se halló ningún cajero con el _id provisto.",
-          next,
+        const cuadreACrear: any = {
+          balance_inicial: balanceInicialNum,
+          balance_final: balanceInicialNum,
+          cajero: cajeroEcontrado._id,
+        };
+
+        const cuadreCreado: any = await Cuadre.create([cuadreACrear], {
+          session,
         });
 
-      const cuadreACrear: any = {
-        balance_inicial: balanceInicialNum,
-        balance_final: balanceInicialNum,
-        cajero: cajeroEcontrado._id,
-      };
+        cajeroEcontrado.cuadres.push(cuadreCreado[0]._id);
 
-      const cuadreCreado: any = await Cuadre.create([cuadreACrear], {
-        session,
-      });
+        await cajeroEcontrado.save();
 
-      cajeroEcontrado.cuadres.push(cuadreCreado[0]._id);
+        await session.commitTransaction();
 
-      await cajeroEcontrado.save();
+        res.status(200).json({
+          exito: true,
+          mensaje: "¡Cuadre creado satisfactoriamente!",
+          cuadre: cuadreCreado[0],
+        });
+      } catch (error) {
+        // await session.abortTransaction();
 
-      await session.commitTransaction();
-
-      res.status(200).json({
-        exito: true,
-        mensaje: "¡Cuadre creado satisfactoriamente!",
-        cuadre: cuadreCreado[0],
-      });
-    } catch (error) {
-      // await session.abortTransaction();
-
-      return errorHandler(error, req, res, next);
-    } finally {
-      session.endSession();
+        return errorHandler(error, req, res, next);
+      } finally {
+        session.endSession();
+      }
     }
   }
 );

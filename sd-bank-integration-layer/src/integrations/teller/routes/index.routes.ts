@@ -3,9 +3,12 @@ import cuentaRouter from "./cuenta.routes";
 import prestamoRouter from "./prestamo.routes";
 import clienteRouter from "./cliente.routes";
 import cuadreRouter from "./cuadre.routes";
+import estadoRouter from "./estado.routes";
 
 export const tellerRoutes = (app: any): void => {
   const BASE_URL: string = "/teller-api/v1";
+
+  app.use(BASE_URL, estadoRouter);
 
   app.use(`${BASE_URL}/auth`, authRouter);
   app.use(`${BASE_URL}/prestamos`, prestamoRouter);

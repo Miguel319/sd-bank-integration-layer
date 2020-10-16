@@ -2,15 +2,22 @@ import { NextFunction, Request, Response } from "express";
 import { asyncHandler } from "../../../shared/middlewares/async.middleware";
 import Cliente from "../../../shared/models/Cliente";
 import { notFound } from "../../../shared/utils/err.helpers";
+import { Estado } from "../../../shared/utils/estado";
 
 // @desc   GET all clientes
 // @route  GET /api/v1/clientes
 // @access Private
 const getAllClientes = asyncHandler(
   async (req: Request, res: Response, next: NextFunction): Promise<any> => {
-    const clientes = await Cliente.find({});
+    const estado = Estado.getInstance();
 
-    res.status(200).json(clientes);
+    if (estado.getTellerArriba()) {
+      next();
+    } else {
+      const clientes = await Cliente.find({});
+
+      res.status(200).json(clientes);
+    }
   }
 );
 
@@ -19,13 +26,19 @@ const getAllClientes = asyncHandler(
 // @access Private
 const getClienteById = asyncHandler(
   async (req: Request, res: Response, next: NextFunction): Promise<any> => {
-    const { _id } = req.params;
+    const estado = Estado.getInstance();
 
-    const cliente = await Cliente.findById(_id);
+    if (estado.getTellerArriba()) {
+      next();
+    } else {
+      const { _id } = req.params;
 
-    if (!cliente) return notFound({ entity: "Cliente", next });
+      const cliente = await Cliente.findById(_id);
 
-    res.status(200).json(cliente);
+      if (!cliente) return notFound({ entity: "Cliente", next });
+
+      res.status(200).json(cliente);
+    }
   }
 );
 
@@ -34,17 +47,23 @@ const getClienteById = asyncHandler(
 // @access Private
 const getClienteByCedula = asyncHandler(
   async (req: Request, res: Response, next: NextFunction): Promise<any> => {
-    const { cedula } = req.params;
+    const estado = Estado.getInstance();
 
-    const cliente = await Cliente.findOne({ cedula });
+    if (estado.getTellerArriba()) {
+      next();
+    } else {
+      const { cedula } = req.params;
 
-    if (!cliente)
-      return notFound({
-        message: "No se encontró ningún cliente con la cédula provista.",
-        next,
-      });
+      const cliente = await Cliente.findOne({ cedula });
 
-    res.status(200).json(cliente);
+      if (!cliente)
+        return notFound({
+          message: "No se encontró ningún cliente con la cédula provista.",
+          next,
+        });
+
+      res.status(200).json(cliente);
+    }
   }
 );
 

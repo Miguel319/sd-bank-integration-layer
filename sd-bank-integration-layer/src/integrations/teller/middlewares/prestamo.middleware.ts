@@ -14,6 +14,7 @@ import Cajero from "../../../shared/models/Cajero";
 import Cuadre from "../../../shared/models/Cuadre";
 import { getPrestamoOp } from "../utils/cajero.helpers";
 import OperacionCajero from "../../../shared/models/OperacionCajero";
+import { Estado } from "../../../shared/utils/estado";
 
 const getPretamosByClienteId = asyncHandler(
   async (
@@ -21,11 +22,17 @@ const getPretamosByClienteId = asyncHandler(
     res: Response,
     next: NextFunction
   ): Promise<void | Response> => {
-    const { _id } = req.params;
+    const estado = Estado.getInstance();
 
-    const prestamos = await Prestamo.find({ cliente: _id });
+    if (estado.getTellerArriba()) {
+      next();
+    } else {
+      const { _id } = req.params;
 
-    res.status(200).json(prestamos);
+      const prestamos = await Prestamo.find({ cliente: _id });
+
+      res.status(200).json(prestamos);
+    }
   }
 );
 
@@ -38,93 +45,119 @@ const processPrestamoPago = asyncHandler(
     res: Response,
     next: NextFunction
   ): Promise<void | Response> => {
-    const session: ClientSession = await startSession();
+    const estado = Estado.getInstance();
 
-    try {
-      session.startTransaction();
+    if (estado.getTellerArriba()) {
+      next();
+    } else {
+      const session: ClientSession = await startSession();
 
-      const { _id } = req.params;
-      const { cajero_id, cuadre_id, cedula } = req.query;
-      const { monto } = req.body;
+      try {
+        session.startTransaction();
 
-      const montoADepositar: number = Number(monto);
+        const { _id } = req.params;
+        const { cajero_id, cuadre_id, cedula } = req.query;
+        const { monto } = req.body;
 
-      if (!montoADepositar || montoADepositar < 0)
-        return next(
-          new ErrorResponse(
-            "El monto debe ser un valor numérico positivo.",
-            400
+        const montoADepositar: number = Number(monto);
+
+        if (!montoADepositar || montoADepositar < 0)
+          return next(
+            new ErrorResponse(
+              "El monto debe ser un valor numérico positivo.",
+              400
+            )
+          );
+
+        const cajeroAsociado: any = await Cajero.findById(cajero_id).session(
+          session
+        );
+
+        if (!cajeroAsociado)
+          return notFound({
+            message: "No se halló ningún cajero con el _id provisto.",
+            next,
+          });
+
+        const cuadreAsociado: any = await Cuadre.findById(cuadre_id).session(
+          session
+        );
+
+        if (!cuadreAsociado)
+          return notFound({
+            message: "No se halló ningún cuadre con el _id provisto.",
+            next,
+          });
+
+        const cliente: any = await Cliente.findOne({ cedula }).session(session);
+
+        if (!cliente)
+          return notFound({
+            message: "No se halló ningún cliente con la cédula provista.",
+            next,
+          });
+
+        const prestamoPerteneceACliente = Boolean(
+          cliente.prestamos.find(
+            (prestamoId: any) => String(prestamoId) === String(_id)
           )
         );
 
-      const cajeroAsociado: any = await Cajero.findById(cajero_id).session(
-        session
-      );
+        if (!prestamoPerteneceACliente)
+          return notFound({
+            message: `No se halló ningún préstamo perteneciente a ${cliente.nombre} ${cliente.apellido} con el id provisto.`,
+            next,
+          });
 
-      if (!cajeroAsociado)
-        return notFound({
-          message: "No se halló ningún cajero con el _id provisto.",
-          next,
-        });
+        const prestamo: any = await Prestamo.findById(_id).session(session);
 
-      const cuadreAsociado: any = await Cuadre.findById(cuadre_id).session(
-        session
-      );
+        if (!prestamo) return notFound({ entity: "Préstamo", next });
 
-      if (!cuadreAsociado)
-        return notFound({
-          message: "No se halló ningún cuadre con el _id provisto.",
-          next,
-        });
+        const montoNumber: number = Number(monto);
 
-      const cliente: any = await Cliente.findOne({ cedula }).session(session);
+        const operacionCajeroObj: any = getPrestamoOp(
+          cajeroAsociado,
+          montoADepositar,
+          cuadreAsociado,
+          cliente
+        );
 
-      if (!cliente)
-        return notFound({
-          message: "No se halló ningún cliente con la cédula provista.",
-          next,
-        });
+        const clientesAtendidos: any = Boolean(
+          cuadreAsociado.clientes_atendidos.find(
+            (el: any) => String(el) === String(cliente._id)
+          )
+        );
 
-      const prestamoPerteneceACliente = Boolean(
-        cliente.prestamos.find(
-          (prestamoId: any) => String(prestamoId) === String(_id)
-        )
-      );
+        if (!clientesAtendidos)
+          cuadreAsociado.clientes_atendidos.push(cliente._id);
 
-      if (!prestamoPerteneceACliente)
-        return notFound({
-          message: `No se halló ningún préstamo perteneciente a ${cliente.nombre} ${cliente.apellido} con el id provisto.`,
-          next,
-        });
+        if (prestamo.cantidad_saldada === prestamo.cantidad_total) {
+          await Prestamo.deleteOne(prestamo, { session });
 
-      const prestamo: any = await Prestamo.findById(_id).session(session);
+          const idxToDeletePrestamoFrom = cliente.prestamos.indexOf(
+            prestamo._id
+          );
 
-      if (!prestamo) return notFound({ entity: "Préstamo", next });
+          cliente.prestamos.splice(idxToDeletePrestamoFrom, 1);
 
-      const montoNumber: number = Number(monto);
+          const operacionRealizada: any = await OperacionCajero.create(
+            [operacionCajeroObj],
+            { session }
+          );
 
-      const operacionCajeroObj: any = getPrestamoOp(
-        cajeroAsociado,
-        montoADepositar,
-        cuadreAsociado,
-        cliente
-      );
+          cuadreAsociado.operaciones.push(operacionRealizada[0]._id);
+          cuadreAsociado.monto_depositado += montoADepositar;
+          cuadreAsociado.balance_final += montoADepositar;
 
-      const clientesAtendidos: any = Boolean(
-        cuadreAsociado.clientes_atendidos.find(
-          (el: any) => String(el) === String(cliente._id)
-        )
-      );
+          await cuadreAsociado.save();
 
-      if (!clientesAtendidos)
-        cuadreAsociado.clientes_atendidos.push(cliente._id);
+          await cliente.save();
 
-      if (prestamo.cantidad_saldada === prestamo.cantidad_total) {
-        await Prestamo.deleteOne(prestamo, { session });
-
-        const idxToDeletePrestamoFrom = cliente.prestamos.indexOf(prestamo._id);
-
-        cliente.prestamos.splice(idxToDeletePrestamoFrom, 1);
+          return res.status(200).json({
+            exito: true,
+            mensaje: "El préstamo fue saldado por completo.",
+          });
+        }
 
         const operacionRealizada: any = await OperacionCajero.create(
           [operacionCajeroObj],
@@ -135,47 +168,30 @@ const processPrestamoPago = asyncHandler(
         cuadreAsociado.monto_depositado += montoADepositar;
         cuadreAsociado.balance_final += montoADepositar;
 
+        const balanceExcedido = validarMontoPrestamo(montoNumber, prestamo);
+
+        if (balanceExcedido)
+          return next(new ErrorResponse(balanceExcedido, 400));
+
+        realizarCalculosPrestamos(montoNumber, prestamo);
+
         await cuadreAsociado.save();
 
-        await cliente.save();
+        await prestamo.save();
 
-        return res.status(200).json({
+        await session.commitTransaction();
+
+        res.status(200).json({
           exito: true,
-          mensaje: "El préstamo fue saldado por completo.",
+          mensaje: `RD$${montoNumber} fueron abonados al préstamo satisfactoriamente.`,
         });
+      } catch (error) {
+        await session.abortTransaction();
+
+        return errorHandler(error, req, res, next);
+      } finally {
+        session.endSession();
       }
-
-      const operacionRealizada: any = await OperacionCajero.create(
-        [operacionCajeroObj],
-        { session }
-      );
-
-      cuadreAsociado.operaciones.push(operacionRealizada[0]._id);
-      cuadreAsociado.monto_depositado += montoADepositar;
-      cuadreAsociado.balance_final += montoADepositar;
-
-      const balanceExcedido = validarMontoPrestamo(montoNumber, prestamo);
-
-      if (balanceExcedido) return next(new ErrorResponse(balanceExcedido, 400));
-
-      realizarCalculosPrestamos(montoNumber, prestamo);
-
-      await cuadreAsociado.save();
-
-      await prestamo.save();
-
-      await session.commitTransaction();
-
-      res.status(200).json({
-        exito: true,
-        mensaje: `RD$${montoNumber} fueron abonados al préstamo satisfactoriamente.`,
-      });
-    } catch (error) {
-      await session.abortTransaction();
-
-      return errorHandler(error, req, res, next);
-    } finally {
-      session.endSession();
     }
   }
 );

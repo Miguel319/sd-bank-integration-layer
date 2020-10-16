@@ -10,6 +10,7 @@ import { ClientSession, startSession } from "mongoose";
 import Usuario from "../../../shared/models/Usuario";
 import Cajero from "../../../shared/models/Cajero";
 import ErrorResponse from "../../../shared/utils/error-response";
+import { Estado } from "../../../shared/utils/estado";
 
 // @desc     Cashier login
 // @route    POST
@@ -20,42 +21,51 @@ const signIn = asyncHandler(
     res: Response,
     next: NextFunction
   ): Promise<Response | void> => {
-    const session: ClientSession = await startSession();
-    session.startTransaction();
+    const estado = Estado.getInstance();
 
-    try {
-      const { email, contrasenia } = req.body;
+    if (estado.getTellerArriba()) {
+      next();
+    } else {
+      const session: ClientSession = await startSession();
+      session.startTransaction();
 
-      validateCashierCredentials(req, next);
+      try {
+        const { email, contrasenia } = req.body;
 
-      const usuario: any = await Usuario.findOne({ email })
-        .select("+contrasenia")
-        .session(session);
+        validateCashierCredentials(req, next);
 
-      if (!usuario) return validateUserCredentials(req, next, true);
+        const usuario: any = await Usuario.findOne({ email })
+          .select("+contrasenia")
+          .session(session);
 
-      const cajero = await Cajero.findById(usuario.entidad_asociada).session(
-        session
-      );
+        if (!usuario) return validateUserCredentials(req, next, true);
 
-      if (!cajero)
-        return next(
-          new ErrorResponse("Sólo los cajeros pueden iniciar sesión.", 401)
+        const cajero = await Cajero.findById(usuario.entidad_asociada).session(
+          session
         );
 
-      const isPasswordRight: boolean = await usuario.matchPassword(contrasenia);
+        if (!cajero)
+          return next(
+            new ErrorResponse("Sólo los cajeros pueden iniciar sesión.", 401)
+          );
 
-      if (!isPasswordRight) return validateCashierCredentials(req, next, true);
+        const isPasswordRight: boolean = await usuario.matchPassword(
+          contrasenia
+        );
 
-      await session.commitTransaction();
+        if (!isPasswordRight)
+          return validateCashierCredentials(req, next, true);
 
-      sendTokenResponse(usuario, 200, res, "sign in", cajero);
-    } catch (error) {
-      await session.abortTransaction();
+        await session.commitTransaction();
 
-      return errorHandler(error, req, res, next);
-    } finally {
-      session.endSession();
+        sendTokenResponse(usuario, 200, res, "sign in", cajero);
+      } catch (error) {
+        await session.abortTransaction();
+
+        return errorHandler(error, req, res, next);
+      } finally {
+        session.endSession();
+      }
     }
   }
 );

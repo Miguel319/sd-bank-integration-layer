@@ -316,3 +316,56 @@ export const interbankTransfer = asyncHandler(
     res.status(status).json(data);
   }
 );
+
+export const agregarBeneficiario = asyncHandler(
+  async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void | Response> => {
+    const { _id } = req.params;
+
+    const {
+      tipo,
+      nombre,
+      cedula,
+      banco_beneficiario,
+      cuenta_beneficiario,
+      email,
+      tipo_de_cuenta,
+    } = req.body;
+
+    const nuevoBeneficiario = {
+      tipo,
+      nombre,
+      cedula,
+      banco_beneficiario,
+      cuenta_beneficiario,
+      email,
+      tipo_de_cuenta,
+    };
+
+    const { status, data } = await axios.put(
+      `${getIbApiURL()}/cuentas/${_id}/transferencia-interbancaria`,
+      nuevoBeneficiario
+    );
+
+    res.status(status).json(data);
+  }
+);
+
+export const deleteBeneficiario = asyncHandler(
+  async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void | Response> => {
+    const { _id } = req.params;
+
+    const { status, data } = await axios.delete(
+      `${getIbApiURL()}/cuentas/beneficiarios/${_id}`
+    );
+
+    res.status(status).json(data);
+  }
+);

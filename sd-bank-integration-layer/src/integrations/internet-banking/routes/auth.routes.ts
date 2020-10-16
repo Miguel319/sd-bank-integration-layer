@@ -1,5 +1,4 @@
 import { Router } from "express";
-import { protect } from "../../../shared/middlewares/auth.middleware";
 import {
   signin,
   signup,
@@ -9,7 +8,7 @@ import {
 
 const authRouter: Router = Router();
 
-authRouter.get("/current-user", protect, currentUser);
+authRouter.get("/current-user", currentUser);
 authRouter.get("/perfiles", /* protect,*/ fetchPerfiles);
 authRouter.post("/signin", signin);
 authRouter.post("/signup", signup);

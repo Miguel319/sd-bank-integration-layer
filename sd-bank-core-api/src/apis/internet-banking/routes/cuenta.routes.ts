@@ -15,6 +15,8 @@ import {
   getBeneficiariosMismoBanco,
   getInterbankTransferBeneficiarios,
   getBeneficiariosFromCuenta,
+  agregarBeneficiario,
+  deleteBeneficiario,
 } from "../controllers/cuenta.controller";
 
 const cuentaRouter: Router = Router();
@@ -36,7 +38,11 @@ cuentaRouter.get(
 cuentaRouter.get("/transacciones/:_id/tipo", getTipoTransaccionById);
 cuentaRouter.get("/transacciones/:_id", getTransaccionById);
 
-cuentaRouter.get("/:_id/beneficiarios", getBeneficiariosFromCuenta);
+cuentaRouter
+  .route("/:_id/beneficiarios")
+  .get(getBeneficiariosFromCuenta)
+  .post(agregarBeneficiario);
+
 cuentaRouter.get("/:_id/beneficiarios-mismo-banco", getBeneficiariosMismoBanco);
 cuentaRouter.get(
   "/:_id/beneficiarios-interbancarios",
@@ -47,5 +53,7 @@ cuentaRouter.put("/:_id/depositar", depositFunds);
 cuentaRouter.put("/:numero_de_cuenta/transferencia-personal", transferToMyself);
 cuentaRouter.put("/:_id/transferencia-mismo-banco", sameBankTransfer);
 cuentaRouter.put("/:_id/transferencia-interbancaria", interbankTransfer);
+
+cuentaRouter.delete("/beneficiarios/:_id", deleteBeneficiario);
 
 export default cuentaRouter;

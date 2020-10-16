@@ -2,8 +2,8 @@
   "name": "sd-bank-core-api",
   "version": "1.0.0",
   "description": "",
-  "type": "modules",
   "main": "index.js",
+  "type": "commonjs",
   "scripts": {
     "start": "node dist/index",
     "dev": "ts-node-dev --respawn src/index",

@@ -1,4 +1,6 @@
 import { Router } from "express";
+import clienteMiddleware from "../middlewares/cliente.middleware";
+import { processCola } from "../../core/middlewares/cola.middleware";
 import {
   getAllClientes,
   getClienteById,
@@ -7,10 +9,25 @@ import {
 
 const clienteRouter: Router = Router();
 
-clienteRouter.get("", /*loggerMiddleware, */ getAllClientes);
+clienteRouter.get(
+  "",
+  clienteMiddleware.getAllClientes,
+  processCola,
+  /*loggerMiddleware, */ getAllClientes
+);
 
-clienteRouter.get("/:_id", /*loggerMiddleware,  */ getClienteById);
+clienteRouter.get(
+  "/:_id",
+  clienteMiddleware.getClienteById,
+  processCola,
+  /*loggerMiddleware,  */ getClienteById
+);
 
-clienteRouter.get("/por-cedula/:cedula", getClienteByCedula);
+clienteRouter.get(
+  "/por-cedula/:cedula",
+  clienteMiddleware.getClienteByCedula,
+  processCola,
+  getClienteByCedula
+);
 
 export default clienteRouter;

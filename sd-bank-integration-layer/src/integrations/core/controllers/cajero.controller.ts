@@ -153,7 +153,7 @@ export const getAllCajeros = asyncHandler(
     res: Response,
     next: NextFunction
   ): Promise<void | Response> => {
-    const { data, status } = await axios.delete(`${getCoreAPIURL()}/cajeros`);
+    const { data, status } = await axios.get(`${getCoreAPIURL()}/cajeros`);
 
     res.status(status).json(data);
   }

@@ -7,7 +7,7 @@ export const getClienteById = asyncHandler(
   async (req: Request, res: Response, next: NextFunction) => {
     const { _id } = req.params;
 
-    const { data, status } = await axios.get(`${getIbApiURL}/clientes/${_id}`);
+    const { data, status } = await axios.get(`${getIbApiURL()}/clientes/${_id}`);
 
     res.status(status).json(data);
   }
@@ -18,7 +18,7 @@ export const getClienteByCedula = asyncHandler(
     const { cedula } = req.params;
 
     const { data, status } = await axios.get(
-      `${getIbApiURL}/clientes/por-cedula/${cedula}`
+      `${getIbApiURL()}/clientes/por-cedula/${cedula}`
     );
 
     res.status(status).json(data);

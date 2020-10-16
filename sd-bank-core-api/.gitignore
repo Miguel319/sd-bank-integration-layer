@@ -1,6 +1,5 @@
 .vscode
 node_modules
-node_modules
 src/secret
 .*env
 src/config/config.env
